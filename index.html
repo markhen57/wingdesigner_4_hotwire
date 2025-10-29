@@ -690,7 +690,7 @@ function trimAirfoilFront(points, trimLEmm) {
     }
 
     if (topPoint === null || bottomPoint === null) {
-        console.log("Keine Punkte für Frontkante gefunden");
+        //console.log("Keine Punkte für Frontkante gefunden");
         return points;
     }
 
@@ -704,6 +704,61 @@ function trimAirfoilFront(points, trimLEmm) {
 
     return newPoints;
 }
+
+function trimAirfoilBack(points, trimTEmm) {
+    if (!points || points.length < 2 || trimTEmm <= 0) {
+        //console.log("Ungültige Eingabe für trimAirfoilBack");
+        return points;
+    }
+
+    const xMax = Math.max(...points.map(p => p[0]));
+    const xLimit = xMax - trimTEmm;
+    //console.log("Back trim start, xLimit:", xLimit);
+
+    // ---------------- Interpolation ----------------
+    const interpY = (p1, p2, x) => {
+        if (!p1 || !p2 || p1[0] === p2[0]) return p1 ? p1[1] : 0;
+        return p1[1] + (p2[1] - p1[1]) * (x - p1[0]) / (p2[0] - p1[0]);
+    };
+
+    // ---------------- Oberseite ----------------
+    const upper = [];
+    let upperDone = false;
+    for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        if (p[0] <= xLimit) {
+            upper.push(p);
+        }
+        if (!upperDone && p[1] > 0 && points[i+1][0] <= xLimit) {
+          const yProfile = interpY(points[i+1], p, xLimit);
+          upper.push([xLimit, points[0][1]]);
+          upper.push([xLimit, yProfile]);
+          upperDone = true;
+        }
+    }
+
+    // ---------------- Unterseite ----------------
+    const lower = [];
+    let lowerDone = false;
+    // Wir laufen von hinten nach vorne, aber nutzen die echten Unterseitenpunkte zur Interpolation
+    for (let i = points.length - 1; i >= 0; i--) {
+        const p = points[i];
+        if (!lowerDone && p[1] < 0 && points[i-1][0] <= xLimit) {
+            // letzter Unterseitenpunkt vor xLimit
+            const yProfile = interpY(p, points[i-1], xLimit);
+            // Profilpunkt auf Schnittlinie
+            lower.push([xLimit, yProfile]);
+            lower.push([xLimit, points[0][1]]);
+            lowerDone = true;
+        }
+    }
+
+    const newPoints = [...upper, ...lower];
+
+    return newPoints;
+}
+
+
 
   // --- Linien aktualisieren, wenn sich Daten oder Skalen ändern ---
   useEffect(() => {
@@ -765,11 +820,19 @@ function trimAirfoilFront(points, trimLEmm) {
       outerWithHoles = insertHoleWithInOut(outerWithHoles, holePtsOuter, 3);
     });
 
-    // trimmen (wenn aktiviert)
-    const innerTrimmed = trimEnabled ? trimAirfoilFront(innerWithHoles, trimLEmm) || innerWithHoles : innerWithHoles;
-    const outerTrimmed = trimEnabled ? trimAirfoilFront(outerWithHoles, trimLEmm) || outerWithHoles : outerWithHoles;
+    // Trimmen (wenn aktiviert)
+    let innerTrimmed = innerWithHoles;
+    let outerTrimmed = outerWithHoles;
 
-    setDebugPoints({ inner: innerTrimmed, outer: outerTrimmed });
+    if (trimEnabled) {
+      innerTrimmed = trimAirfoilFront(innerTrimmed, trimLEmm) || innerTrimmed;
+      outerTrimmed = trimAirfoilFront(outerTrimmed, trimLEmm) || outerTrimmed;
+
+      innerTrimmed = trimAirfoilBack(innerTrimmed, trimTEmm) || innerTrimmed;
+      outerTrimmed = trimAirfoilBack(outerTrimmed, trimTEmm) || outerTrimmed;
+    }
+
+    //setDebugPoints({ inner: innerTrimmed, outer: outerTrimmed });
 
     // Rotation um den vorderen Punkt
     const innerPtsRotated = innerTrimmed.map(pt => rotatePoint(pt, rotationInner));
@@ -793,7 +856,7 @@ function trimAirfoilFront(points, trimLEmm) {
     scene.add(scene.lines.innerLine);
     scene.add(scene.lines.outerLine);
 
-    //setDebugPoints({ inner: innerPtsFinal, outer: outerPtsFinal });
+    setDebugPoints({ inner: innerPtsFinal, outer: outerPtsFinal });
   }, [
     innerDAT, outerDAT, 
     innerScale, outerScale, 
