@@ -631,15 +631,6 @@ function addBottomPath(profilePts, xPercent = 0.5, gap = 2, forwardAngleDeg = 10
   // rechts von fwdPt
   const right = bottomPts.filter(p => p[0] > fwdPt[0]);
 
-      // --- DEBUG ---
-  /*console.log("----- DEBUG addBottomPath -----");
-  console.log("xCut:", xCut);
-  console.log("apexPt:", apexPt);
-  console.log("backPt (Start V):", backPt);
-  console.log("fwdPt (End V):", fwdPt);
-  console.log("cutIdx in bottomPts:", cutIdx, "point at cutIdx:", profilePts[cutIdx]);
-  console.log("-------------------------------");*/
-
   const newBottom = [
   ...left,
   backPt,
@@ -758,8 +749,6 @@ function trimAirfoilBack(points, trimTEmm) {
     return newPoints;
 }
 
-
-
   // --- Linien aktualisieren, wenn sich Daten oder Skalen ändern ---
   useEffect(() => {
     if (!innerDAT || !outerDAT || !sceneRef.current) return;
@@ -792,9 +781,8 @@ function trimAirfoilBack(points, trimTEmm) {
     [innerWithScaled, outerWithScaled] = matchPointCount(innerWithScaled, outerWithScaled);
 
     // --- Nach dem ersten matchPointCount ---
-    const targetLen = innerWithScaled.length; // beide gleich lang
-    innerWithScaled = resampleArcLength(innerWithScaled, targetLen);
-    outerWithScaled = resampleArcLength(outerWithScaled, targetLen);
+    innerWithScaled = resampleArcLength(innerWithScaled, profilePointsCount);
+    outerWithScaled = resampleArcLength(outerWithScaled, profilePointsCount);
 
     // --- Glätten der Profile, bevor Löcher geschnitten werden ---
     let innerWithAilerons = smoothProfile(innerWithScaled, 2); // threshold anpassen
