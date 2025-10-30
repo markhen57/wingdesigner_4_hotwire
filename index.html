@@ -749,6 +749,70 @@ function trimAirfoilBack(points, trimTEmm) {
     return newPoints;
 }
 
+
+/**
+ * Parallel Resample ohne Winkelprüfung, aber mit Coverage & Threshold
+ * @param {Array} profileA - Originalprofil A
+ * @param {Array} profileB - Originalprofil B
+ * @param {number} targetLen - gewünschte Anzahl Punkte
+ * @param {number} threshold - maximale erlaubte Abweichung
+ */
+const resampleProfilesCoverage = (profileA, profileB, targetLen=300, threshold=0.01) => {
+
+  const resampleSingle = (pts) => {
+    const out = [];
+    const n = pts.length;
+
+    // Wenn zu wenige Punkte, einfach return
+    if(n <= targetLen) return [...pts];
+
+    // Gleichmäßige Abstände entlang Arc-Length
+    const distances = [0];
+    for(let i=1; i<n; i++){
+      const dx = pts[i][0] - pts[i-1][0];
+      const dy = pts[i][1] - pts[i-1][1];
+      distances.push(distances[i-1] + Math.hypot(dx, dy));
+    }
+    const totalLen = distances[distances.length-1];
+
+    let j = 0;
+    for(let k=0; k<targetLen; k++){
+      const t = (k/(targetLen-1)) * totalLen;
+
+      // Suche das Segment
+      while(j < distances.length-1 && distances[j+1] < t) j++;
+      const i0 = j;
+      const i1 = j+1;
+
+      // Interpolation
+      const f = (t - distances[i0]) / (distances[i1]-distances[i0] || 1);
+      let pt = [
+        pts[i0][0]*(1-f) + pts[i1][0]*f,
+        pts[i0][1]*(1-f) + pts[i1][1]*f
+      ];
+
+      // Threshold check: darf nicht zu weit vom Originalsegment abweichen
+      const dx0 = pt[0] - pts[i0][0];
+      const dy0 = pt[1] - pts[i0][1];
+      const dist0 = Math.hypot(dx0, dy0);
+      const dx1 = pt[0] - pts[i1][0];
+      const dy1 = pt[1] - pts[i1][1];
+      const dist1 = Math.hypot(dx1, dy1);
+      if(dist0 > threshold) pt[0] = pts[i0][0], pt[1] = pts[i0][1];
+      if(dist1 > threshold) pt[0] = pts[i1][0], pt[1] = pts[i1][1];
+
+      out.push(pt);
+    }
+    return out;
+  };
+
+  // Resample beide Profile
+  const outA = resampleSingle(profileA);
+  const outB = resampleSingle(profileB);
+
+  return [outA, outB];
+};
+
   // --- Linien aktualisieren, wenn sich Daten oder Skalen ändern ---
   useEffect(() => {
     if (!innerDAT || !outerDAT || !sceneRef.current) return;
@@ -760,8 +824,8 @@ function trimAirfoilBack(points, trimTEmm) {
     let outerPts = parseDAT(outerDAT);
 
     // Resample direkt auf z.B. 200–300 Punkte
-    innerPts = resampleArcLength(innerPts, profilePointsCount);
-    outerPts = resampleArcLength(outerPts, profilePointsCount);
+    //innerPts = resampleArcLength(innerPts, profilePointsCount);
+    //outerPts = resampleArcLength(outerPts, profilePointsCount);
 
     // Danach skalieren
     innerPts = scaleProfile(innerPts, innerScale);
@@ -781,8 +845,8 @@ function trimAirfoilBack(points, trimTEmm) {
     [innerWithScaled, outerWithScaled] = matchPointCount(innerWithScaled, outerWithScaled);
 
     // --- Nach dem ersten matchPointCount ---
-    innerWithScaled = resampleArcLength(innerWithScaled, profilePointsCount);
-    outerWithScaled = resampleArcLength(outerWithScaled, profilePointsCount);
+    //innerWithScaled = resampleArcLength(innerWithScaled, profilePointsCount);
+    //outerWithScaled = resampleArcLength(outerWithScaled, profilePointsCount);
 
     // --- Glätten der Profile, bevor Löcher geschnitten werden ---
     let innerWithAilerons = smoothProfile(innerWithScaled, 2); // threshold anpassen
@@ -821,6 +885,8 @@ function trimAirfoilBack(points, trimTEmm) {
     }
 
     //setDebugPoints({ inner: innerTrimmed, outer: outerTrimmed });
+    //const threshold = 5;
+    //const [alignedInner, alignedOuter] = resampleProfilesCoverage(innerTrimmed, outerTrimmed, profilePointsCount, threshold);
 
     // Rotation um den vorderen Punkt
     const innerPtsRotated = innerTrimmed.map(pt => rotatePoint(pt, rotationInner));
