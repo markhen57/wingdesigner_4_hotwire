@@ -886,6 +886,10 @@ const resampleProfilesCoverage = (profileA, profileB, targetLen=300, threshold=0
     //Anzahl der PUnkte im Profil innen und aussen gleich machen
     [innerWithScaled, outerWithScaled] = matchPointCount(innerWithScaled, outerWithScaled);
 
+    // --- Nach dem ersten matchPointCount ---
+    //innerWithScaled = resampleArcLength(innerWithScaled, profilePointsCount);
+    //outerWithScaled = resampleArcLength(outerWithScaled, profilePointsCount);
+
     // --- Glätten der Profile, bevor Löcher geschnitten werden ---
     let innerWithAilerons = smoothProfile(innerWithScaled, 2); // threshold anpassen
     let outerWithAilerons = smoothProfile(outerWithScaled, 2);
