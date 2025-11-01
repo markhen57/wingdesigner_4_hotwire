@@ -1,11 +1,12 @@
 window.PointTag = {
-  PROFILE: "profile",
+  PROFILE: "PROFILE_POINT",
   START: "START_POINT",
   END: "END_POINT",
   LE: "LE",
   TE: "TE",
-  HOLE: "hole",
-  AILERON: "aileron"
+  HOLE: "HOLE_POINT",
+  HOLE_END: "HOLE_END_POINT",
+  AILERON: "AILERON"
 };
 
 window.parseDAT = function(datText) {
@@ -17,7 +18,8 @@ window.parseDAT = function(datText) {
       const x = parseFloat(parts[0]);
       const y = parseFloat(parts[1]);
       if (!isNaN(x) && !isNaN(y)) {
-        pts.push({ x, y, tag: "profile" });
+        //pts.push({ x, y, tag: "PROFILE" });
+        pts.push({ x, y });
       }
     }
   }

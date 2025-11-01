@@ -104,7 +104,7 @@ function HotwireWing3D() {
     // Marker als Sprite (z.B. für Maus-/Tag-Markierung)
     const material = new THREE.SpriteMaterial({ color: 0x000000 });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(10, 10, 1);
+    sprite.scale.set(4, 4, 1);
     sprite.visible = false;
     scene.add(sprite);
     markerRef.current = sprite;
@@ -118,6 +118,19 @@ function HotwireWing3D() {
       reqId = requestAnimationFrame(animate);
       controls.update();
 
+        // --- Marker skalieren, damit er gleich groß bleibt ---
+      if (markerRef.current && cameraRef.current) {
+        const cam = cameraRef.current;
+        const marker = markerRef.current;
+
+        const distance = cam.position.distanceTo(marker.position);
+        const vFOV = cam.fov * (Math.PI / 180);
+        const height = 2 * Math.tan(vFOV / 2) * distance;
+        const rendererHeight = rendererRef.current.domElement.clientHeight;
+        const scale = (8 / rendererHeight) * height; // 8 = gewünschte Pixelgröße
+        marker.scale.set(scale, scale, 1);
+      }
+
       // Kamera/Target Refs updaten
       cameraPosRef.current.x = camera.position.x;
       cameraPosRef.current.y = camera.position.y;
@@ -129,6 +142,7 @@ function HotwireWing3D() {
 
       renderer.render(scene, camera);
     };
+
     animate();
 
     // Resize Handling
@@ -168,77 +182,100 @@ function HotwireWing3D() {
   }, []);
 
 
-  useEffect(() => {
-    if (!rendererRef.current || !sceneRef.current || !tooltipRef.current) return;
+useEffect(() => {
+  if (!rendererRef.current || !sceneRef.current || !tooltipRef.current) return;
 
-    const scene = sceneRef.current;
-    const camera = cameraRef.current;
-    const renderer = rendererRef.current;
-    const tooltip = tooltipRef.current;
-    const canvas = renderer.domElement;
+  const scene = sceneRef.current;
+  const camera = cameraRef.current;
+  const renderer = rendererRef.current;
+  const tooltip = tooltipRef.current;
+  const canvas = renderer.domElement;
 
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
 
-    const handleMouseMove = (event) => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  const handleMouseMove = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, camera);
 
-      const lines = [];
-      if (scene.lines) {
-        if (scene.lines.innerLine) lines.push(scene.lines.innerLine);
-        if (scene.lines.outerLine) lines.push(scene.lines.outerLine);
-      }
+    const lines = [];
+    if (scene.lines) {
+      if (scene.lines.innerLine) lines.push(scene.lines.innerLine);
+      if (scene.lines.outerLine) lines.push(scene.lines.outerLine);
+    }
 
-      if (lines.length === 0) {
-        tooltip.style.display = "none";
-        return;
-      }
+    if (lines.length === 0) {
+      tooltip.style.display = "none";
+      return;
+    }
 
-      let closestPoint = null;
-      let minDist = Infinity;
-      let closestIndex = -1;
-      let closestTag = null;
+    let closestPoint = null;
+    let minDist = Infinity;
+    let closestIndex = -1;
+    let closestTag = null;
 
-      lines.forEach(line => {
-        const positions = line.geometry.attributes.position.array;
-        const tags = (line.geometry.attributes.tag && line.geometry.attributes.tag.array) || [];
+lines.forEach(line => {
+  const positions = line.geometry.attributes.position.array;
 
-        for (let i = 0; i < positions.length; i += 3) {
-          const vertex = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
-          const projected = vertex.clone().project(camera);
-          const screenX = (projected.x + 1) / 2 * rect.width;
-          const screenY = (-projected.y + 1) / 2 * rect.height;
-          const dx = screenX - (event.clientX - rect.left);
-          const dy = screenY - (event.clientY - rect.top);
-          const dist = Math.sqrt(dx*dx + dy*dy);
+  for (let i = 0; i < positions.length; i += 3) {
+    const vertex = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
+    const projected = vertex.clone().project(camera);
+    const screenX = (projected.x + 1) / 2 * rect.width;
+    const screenY = (-projected.y + 1) / 2 * rect.height;
+    const dx = screenX - (event.clientX - rect.left);
+    const dy = screenY - (event.clientY - rect.top);
+    const dist = Math.sqrt(dx*dx + dy*dy);
 
-          if (dist < minDist && dist < 10) {
-            minDist = dist;
-            closestPoint = vertex;
-            closestIndex = i / 3;
-            closestTag = tags[i / 3] !== undefined ? tags[i / 3] : null;
-          }
+    if (dist < minDist && dist < 10) {
+      minDist = dist;
+      closestPoint = vertex;
+      closestIndex = i / 3;
+
+      // Tag aus debugPoints holen
+      const tagArray = line === scene.lines.innerLine ? debugPoints.inner : debugPoints.outer;
+      closestTag = tagArray[i / 3] ? tagArray[i / 3].tag : null;
+    }
+  }
+});
+
+
+    if (closestPoint) {
+      let tagText = closestTag && Object.values(window.PointTag).includes(closestTag) ? `\nTag: ${closestTag}` : `\nNo Tag`;
+      tooltip.style.display = "block";
+      tooltip.style.left = event.clientX + 10 + "px";
+      tooltip.style.top = event.clientY + 10 + "px";
+      tooltip.innerText = 
+          `Index: ${closestIndex}\nx: ${closestPoint.x.toFixed(2)}, y: ${closestPoint.y.toFixed(2)}, z: ${closestPoint.z.toFixed(2)}` +
+          tagText;
+      
+        // Marker setzen
+      if (markerRef.current) {
+        markerRef.current.position.copy(closestPoint);
+        // Farbe abhängig vom Tag
+        if (closestTag === window.PointTag.START || closestTag === window.PointTag.END || closestTag === window.PointTag.AILERON || closestTag === window.PointTag.HOLE  || closestTag === window.PointTag.HOLE_END) {
+          markerRef.current.material.color.set(0x00ff00); // grün
+        } else {
+          markerRef.current.material.color.set(0x000000); // schwarz
         }
-      });
-
-      if (closestPoint) {
-        tooltip.style.display = "block";
-        tooltip.style.left = event.clientX + 10 + "px";
-        tooltip.style.top = event.clientY + 10 + "px";
-        tooltip.innerText = `Index: ${closestIndex}\nx: ${closestPoint.x.toFixed(1)}, y: ${closestPoint.y.toFixed(1)}, z: ${closestPoint.z.toFixed(1)}` +
-                            (closestTag !== null ? `\nTag: ${closestTag}` : "");
-      } else {
-        tooltip.style.display = "none";
+        markerRef.current.visible = true;
       }
-    };
 
-    canvas.addEventListener("mousemove", handleMouseMove);
-    return () => canvas.removeEventListener("mousemove", handleMouseMove);
-  }, [sceneRef.current, rendererRef.current, cameraRef.current]);
+
+    } else {
+      tooltip.style.display = "none";
+    }
+
+
+  };
+
+  canvas.addEventListener("mousemove", handleMouseMove);
+  return () => canvas.removeEventListener("mousemove", handleMouseMove);
+}, [sceneRef.current, rendererRef.current, cameraRef.current, debugPoints]);
+
+
 
 
   useEffect(() => {
@@ -260,8 +297,6 @@ function HotwireWing3D() {
 
     outerPts = window.offsetOuterProfile(outerPts, outerVerticalOffset, outerChordOffset);
 
-    setDebugPoints({ inner: innerPts.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerPts.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
-
     //hier weiter bauen
     
     let [innerWithScaled, outerWithScaled] = window.matchPointCount(innerPts, outerPts);
@@ -274,16 +309,23 @@ function HotwireWing3D() {
       outerWithAilerons = window.addBottomPath(outerWithAilerons, a.xPercent, a.thicknessTop, a.frontAngleDeg, a.rearAngleDeg);
     });
 
-    let innerWithHoles = innerWithAilerons.slice();
+     let innerWithHoles = innerWithAilerons.slice();
     let outerWithHoles = outerWithAilerons.slice();
 
-    holes.forEach(h => {
+   holes.forEach(h => {
       const holeInner = window.getHolePoints(h.diameter, h.xPercent, h.yPercent, innerWithHoles, h.nPoints);
       innerWithHoles = window.insertHoleWithInOut(innerWithHoles, holeInner, 3);
       const holeOuter = window.getHolePoints(h.diameter, h.xPercent, h.yPercent, outerWithHoles, h.nPoints);
       outerWithHoles = window.insertHoleWithInOut(outerWithHoles, holeOuter, 3);
     });
+ 
+    setDebugPoints({ inner: innerWithHoles.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerWithHoles.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
 
+    const innerFinal = innerWithHoles;
+    const outerFinal = outerWithHoles;
+    
+
+/* 
     let innerTrimmed = innerWithHoles;
     let outerTrimmed = outerWithHoles;
     if (trimEnabled) {
@@ -295,7 +337,7 @@ function HotwireWing3D() {
 
     const innerFinal = innerTrimmed.map(p => window.rotatePoint(p, rotationInner));
     const outerFinal = outerTrimmed.map(p => window.rotatePoint(p, rotationOuter));
-
+*/
     const scene = sceneRef.current;
     if (scene.lines && scene.lines.innerLine) scene.remove(scene.lines.innerLine);
     if (scene.lines && scene.lines.outerLine) scene.remove(scene.lines.outerLine);

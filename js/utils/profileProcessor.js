@@ -2,7 +2,7 @@ window.scaleProfile = function(pts, scale) {
   return pts.map(p => ({ ...p, x: p.x * scale, y: p.y * scale }));
 };
 
-window.matchPointCount = function(ptsA, ptsB) {
+/*window.matchPointCount = function(ptsA, ptsB) {
   const maxLen = Math.max(ptsA.length, ptsB.length);
   const resample = (pts, targetLen) => {
     const out = [];
@@ -17,6 +17,50 @@ window.matchPointCount = function(ptsA, ptsB) {
     return out;
   };
   return [resample(ptsA, maxLen), resample(ptsB, maxLen)];
+};*/
+
+window.matchPointCount = function(ptsA, ptsB) {
+  const maxLen = Math.max(ptsA.length, ptsB.length);
+
+  const resampleWithTags = (pts, targetLen) => {
+    // Alle neutralen Punkte sammeln (ohne Tag)
+    const neutralPts = pts.filter(p => !p.tag);
+    const taggedPts = pts.filter(p => p.tag);
+
+    const resampledNeutral = [];
+    for (let i = 0; i < targetLen; i++) {
+      const t = i / (targetLen - 1) * (neutralPts.length - 1);
+      const i0 = Math.floor(t);
+      const i1 = Math.ceil(t);
+      const f = t - i0;
+
+      const p0 = neutralPts[i0] || { x: 0, y: 0, z: 0 };
+      const p1 = neutralPts[i1] || { x: 0, y: 0, z: 0 };
+
+      resampledNeutral.push({
+        x: p0.x * (1 - f) + p1.x * f,
+        y: p0.y * (1 - f) + p1.y * f,
+        z: (p0.z || 0) * (1 - f) + (p1.z || 0) * f,
+        tag: null
+      });
+    }
+
+    // Jetzt die getaggten Punkte wieder an den gleichen Index einfügen
+    const result = [];
+    let neutralIndex = 0;
+    for (let i = 0; i < pts.length; i++) {
+      if (pts[i].tag) {
+        result.push(pts[i]); // Tagged Point unverändert
+      } else {
+        result.push(resampledNeutral[neutralIndex]);
+        neutralIndex++;
+      }
+    }
+
+    return result;
+  };
+
+  return [resampleWithTags(ptsA, maxLen), resampleWithTags(ptsB, maxLen)];
 };
 
 window.offsetOuterProfile = function(pts, verticalOffset, chordOffset) {
@@ -46,7 +90,7 @@ window.getHolePoints = function(diameter, xPercent, yPercent, profilePts, nPoint
     const theta = (i / nPoints) * 2 * Math.PI;
     const x = centerX + radius * Math.cos(theta);
     const y = centerY + radius * Math.sin(theta);
-    holePts.push({ x, y, tag: "hole" });
+    holePts.push({ x, y, tag: "HOLE" });
   }
   return holePts;
 };
@@ -86,17 +130,17 @@ window.createCutPoints = function(profilePt, holePt, n = 3) {
   return points;
 };
 
-window.insertHoleWithInOut = function(profilePts, holePts, nCutPoints = 3) {
+/*window.insertHoleWithInOut = function(profilePts, holePts, nCutPoints = 3) {
   if (!profilePts.length || !holePts.length) return profilePts;
   const { closestProfileIdx: ipIdx, closestHoleIdx: ihIdx } = window.findClosestHolePoint(profilePts, holePts);
   const profilePt = profilePts[ipIdx];
   const holePt = holePts[ihIdx];
-  const inOutProfilePt = { ...profilePt, tag: "profile" };
-  const inOutHolePt = { ...holePt, tag: "hole" };
-  const rotatedHolePts = window.rotateHolePointsToStart(holePts, ihIdx, true).map(p => ({ x: p.x, y: p.y, tag: "hole" }));
-  const cutPts = window.createCutPoints(profilePt, holePt, nCutPoints).map(p => ({ x: p.x, y: p.y, tag: "hole" }));
+  const inOutProfilePt = { ...profilePt, tag: "HOLE" };
+  const inOutHolePt = { ...holePt, tag: "HOLE" };
+  const rotatedHolePts = window.rotateHolePointsToStart(holePts, ihIdx, true).map(p => ({ x: p.x, y: p.y, tag: "HOLE" }));
+  const cutPts = window.createCutPoints(profilePt, holePt, nCutPoints).map(p => ({ x: p.x, y: p.y, tag: "HOLE" }));
   return [
-    ...profilePts.slice(0, ipIdx + 1),
+    ...profilePts.slice(0, ipIdx + 2),
     inOutProfilePt,
     ...cutPts,
     inOutHolePt,
@@ -104,8 +148,40 @@ window.insertHoleWithInOut = function(profilePts, holePts, nCutPoints = 3) {
     inOutHolePt,
     ...cutPts.slice().reverse(),
     inOutProfilePt,
-    ...profilePts.slice(ipIdx + 1)
+    ...profilePts.slice(ipIdx + 2)
   ];
+};*/
+
+window.insertHoleWithInOut = function(profilePts, holePts, nCutPoints = 3) {
+  if (!profilePts.length || !holePts.length) return profilePts;
+
+  const { closestProfileIdx: ipIdx, closestHoleIdx: ihIdx } = window.findClosestHolePoint(profilePts, holePts);
+  const profilePt = profilePts[ipIdx];
+  const holePt = holePts[ihIdx];
+
+  const inOutProfilePtStart = { ...profilePt, tag: window.PointTag.HOLE_END };
+  const inOutProfilePtEnd = { ...profilePt, tag: window.PointTag.HOLE_END };
+  const inOutHolePt = { ...holePt, tag: window.PointTag.HOLE };
+
+  const rotatedHolePts = window.rotateHolePointsToStart(holePts, ihIdx, true)
+    .map(p => ({ x: p.x, y: p.y, tag: window.PointTag.HOLE }));
+
+  const cutPts = window.createCutPoints(profilePt, holePt, nCutPoints)
+    .map(p => ({ x: p.x, y: p.y, tag: window.PointTag.HOLE }));
+
+  const newProfile = [
+  ...profilePts.slice(0, ipIdx), // alle Punkte **bis zum Insert-Punkt**, ohne Tag
+  inOutProfilePtStart,                     // erster spezieller Punkt mit Tag
+  ...cutPts,                           // Cut-Punkte mit Tag
+  inOutHolePt,                         // Start-Hole-Punkt
+  ...rotatedHolePts.slice(1),          // alle weiteren Hole-Punkte außer dem ersten (doppeltes vermeiden)
+  inOutHolePt,                         // End-Hole-Punkt
+  ...cutPts.slice().reverse(),        // Cut-Punkte wieder zurück
+  inOutProfilePtEnd,                      // letzter spezieller Punkt mit Tag
+  ...profilePts.slice(ipIdx)       // Rest des Profils ab Insert-Punkt
+];
+
+  return newProfile;
 };
 
 window.smoothProfile = function(points, threshold = 2) {
@@ -164,7 +240,7 @@ window.projectToProfile = function(profilePts, x) {
   return profilePts[profilePts.length - 1].y;
 };
 
-window.addBottomPath = function(profilePts, xPercent = 0.5, gap = 2, forwardAngleDeg = 10, backwardAngleDeg = 10) {
+/*window.addBottomPath = function(profilePts, xPercent = 0.5, gap = 2, forwardAngleDeg = 10, backwardAngleDeg = 10) {
   const forwardAngle = forwardAngleDeg * Math.PI / 180;
   const backwardAngle = backwardAngleDeg * Math.PI / 180;
   const xs = profilePts.map(p => p.x);
@@ -187,7 +263,47 @@ window.addBottomPath = function(profilePts, xPercent = 0.5, gap = 2, forwardAngl
   const right = bottomPts.filter(p => p.x > fwdPt.x);
   const newBottom = [...left, backPt, apexPt, fwdPt, ...right];
   return [...profilePts.slice(0, half), ...newBottom];
+};*/
+
+window.addBottomPath = function(profilePts, xPercent = 0.5, gap = 2, forwardAngleDeg = 10, backwardAngleDeg = 10) {
+  const forwardAngle = forwardAngleDeg * Math.PI / 180;
+  const backwardAngle = backwardAngleDeg * Math.PI / 180;
+
+  const xs = profilePts.map(p => p.x);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const xCut = minX + xPercent * (maxX - minX);
+
+  const yBottom = window.findBottomAtX(profilePts, xCut);
+  const yTop = window.findTopAtX(profilePts, xCut);
+  const apexY = yTop - gap;
+  const VHeight = apexY - yBottom;
+
+  const dxBack = Math.tan(backwardAngle) * VHeight;
+  const dxFwd = Math.tan(forwardAngle) * VHeight;
+
+  // Neue Punkte mit Tag
+  const apexPt = { x: xCut, y: apexY, tag: window.PointTag.AILERON };
+  const backPt = { x: xCut - dxBack, y: yBottom, tag: window.PointTag.AILERON };
+  const fwdPt = { x: xCut + dxFwd, y: yBottom, tag: window.PointTag.AILERON };
+
+  const half = Math.ceil(profilePts.length / 2);
+  const bottomPts = profilePts.slice(half);
+
+  fwdPt.y = window.projectToProfile(bottomPts, fwdPt.x);
+  backPt.y = window.projectToProfile(bottomPts, backPt.x);
+
+  // Filter links/rechts und alle Punkte dazwischen auch taggen
+  //const left = bottomPts.filter(p => p.x < backPt.x).map(p => ({ ...p, tag: window.PointTag.AILERON }));
+  //const right = bottomPts.filter(p => p.x > fwdPt.x).map(p => ({ ...p, tag: window.PointTag.AILERON }));
+  // Bestehende Punkte links/rechts unverändert übernehmen
+  const left = bottomPts.filter(p => p.x < backPt.x);
+  const right = bottomPts.filter(p => p.x > fwdPt.x);
+
+  const newBottom = [...left, backPt, apexPt, fwdPt, ...right];
+
+  return [...profilePts.slice(0, half), ...newBottom];
 };
+
 
 window.trimAirfoilFront = function(points, trimLEmm) {
   if (!points || points.length < 2 || trimLEmm <= 0) return points;
