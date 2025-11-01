@@ -15,6 +15,7 @@ hotwire-wing-3d/
 │   │   ├── AileronsSection.jsx
 │   │   ├── TrimSection.jsx
 │   │   └── DebugSection.jsx
+│   │   └── LeftPanel.jsx
 │   ├── utils/
 │   │   ├── datParser.js
 │   │   ├── profileProcessor.js

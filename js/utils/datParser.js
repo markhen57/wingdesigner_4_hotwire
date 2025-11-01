@@ -1,3 +1,13 @@
+window.PointTag = {
+  PROFILE: "profile",
+  START: "start",
+  END: "end",
+  LE: "LE",
+  TE: "TE",
+  HOLE: "hole",
+  AILERON: "aileron"
+};
+
 window.parseDAT = function(datText) {
   const lines = datText.split(/\r?\n/).map(l => l.trim());
   const pts = [];
@@ -12,8 +22,8 @@ window.parseDAT = function(datText) {
     }
   }
   if (pts.length > 1) {
-    pts[0].tag = "start";
-    pts[pts.length - 1].tag = "end";
+    pts[0].tag = PointTag.START;
+    pts[pts.length - 1].tag = PointTag.END;
   }
   return pts;
 };
