@@ -328,7 +328,11 @@ lines.forEach(line => {
       outerTrimmed = window.trimAirfoilBack(outerTrimmed, trimTEmm);
     }
 
-    const { innerNew, outerNew } = window.resampleDualArcLength(innerTrimmed, outerTrimmed, profilePointsCount);
+    //const { innerNew, outerNew } = window.resampleDualArcLength(innerTrimmed, outerTrimmed, profilePointsCount);
+
+    const { innerNew, outerNew } = window.syncTaggedPointsNoDuplicates(innerTrimmed, outerTrimmed);
+
+    setDebugPoints({ inner: innerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
 
     const innerFinal = innerNew.map(p => window.rotatePoint(p, rotationInner));
     const outerFinal = outerNew.map(p => window.rotatePoint(p, rotationOuter));
@@ -344,7 +348,7 @@ lines.forEach(line => {
     scene.add(innerLine);
     scene.add(outerLine);
 
-    setDebugPoints({ inner: innerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
+    //setDebugPoints({ inner: innerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
   }, [
     innerDAT, outerDAT, 
     innerScale, outerScale, 
