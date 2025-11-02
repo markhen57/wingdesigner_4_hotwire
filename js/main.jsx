@@ -328,11 +328,10 @@ lines.forEach(line => {
       outerTrimmed = window.trimAirfoilBack(outerTrimmed, trimTEmm);
     }
 
-    innerTrimmed = window.resampleArcLength(innerTrimmed, profilePointsCount);
-    outerTrimmed = window.resampleArcLength(outerTrimmed, profilePointsCount);
+    const { innerNew, outerNew } = window.resampleDualArcLength(innerTrimmed, outerTrimmed, profilePointsCount);
 
-    const innerFinal = innerTrimmed.map(p => window.rotatePoint(p, rotationInner));
-    const outerFinal = outerTrimmed.map(p => window.rotatePoint(p, rotationOuter));
+    const innerFinal = innerNew.map(p => window.rotatePoint(p, rotationInner));
+    const outerFinal = outerNew.map(p => window.rotatePoint(p, rotationOuter));
 
     const scene = sceneRef.current;
     if (scene.lines && scene.lines.innerLine) scene.remove(scene.lines.innerLine);

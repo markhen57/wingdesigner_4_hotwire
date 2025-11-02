@@ -363,56 +363,6 @@ window.trimAirfoilBack = function(points, trimTEmm) {
 };
 
 // Funktion: Punkte gleichmäßig entlang der Kurve verteilen (Objekte {x, y})
-/*window.resampleArcLength = function(points, targetLen) {
-  if (!points || points.length < 2 || targetLen < 2) return points;
-
-  // kumulative Abstände
-  const distances = [0];
-  for (let i = 1; i < points.length; i++) {
-    const dx = points[i].x - points[i - 1].x;
-    const dy = points[i].y - points[i - 1].y;
-    distances.push(distances[i - 1] + Math.hypot(dx, dy));
-  }
-  const totalLength = distances[distances.length - 1];
-
-  // Originalpunkte mit Tags merken
-  const tagMap = {};
-  points.forEach((p, idx) => {
-    if (p.tag) tagMap[idx] = { x: p.x, y: p.y, tag: p.tag };
-  });
-
-  const out = [];
-  for (let i = 0; i < targetLen; i++) {
-    const t = (i / (targetLen - 1)) * totalLength;
-
-    // Segment finden
-    let j = 1;
-    while (j < distances.length && distances[j] < t) j++;
-    const i0 = j - 1;
-    const i1 = j;
-
-    // Interpolieren
-    const f = (distances[i1] - distances[i0]) === 0 ? 0 : (t - distances[i0]) / (distances[i1] - distances[i0]);
-    let x = points[i0].x * (1 - f) + points[i1].x * f;
-    let y = points[i0].y * (1 - f) + points[i1].y * f;
-    let tag = null;
-
-    // Tags nur an exakte Originalpunkte setzen
-    if (tagMap[i0] && f === 0) {
-      x = tagMap[i0].x;
-      y = tagMap[i0].y;
-      tag = tagMap[i0].tag;
-    } else if (tagMap[i1] && f === 1) {
-      x = tagMap[i1].x;
-      y = tagMap[i1].y;
-      tag = tagMap[i1].tag;
-    }
-
-    out.push({ x, y, tag });
-  }
-
-  return out;
-};*/
 
 window.resampleArcLength = function(points, targetLen) {
   if (!points || points.length < 2 || targetLen < 2) return points;
@@ -521,4 +471,67 @@ window.resampleArcLength = function(points, targetLen) {
 
   return out;
 };
+
+window.resampleDualArcLength = function(innerPts, outerPts, targetLen) {
+
+  function computeDistances(points) {
+    const dist = [0];
+    for (let i = 1; i < points.length; i++) {
+      dist.push(dist[i-1] + Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y));
+    }
+    return dist;
+  }
+
+  const dIn = computeDistances(innerPts);
+  const dOut = computeDistances(outerPts);
+  const lenIn = dIn[dIn.length - 1] || 1;
+  const lenOut = dOut[dOut.length - 1] || 1;
+
+  // 🎯 1. Gemeinsame Tag-Liste
+  const tagged = [];
+  innerPts.forEach((p, i) => { if (p.tag) tagged.push({ from:'inner', idx:i, dist:dIn[i]/lenIn, tag:p.tag }) });
+  outerPts.forEach((p, i) => { if (p.tag) tagged.push({ from:'outer', idx:i, dist:dOut[i]/lenOut, tag:p.tag }) });
+
+  // Slot reservieren
+  const reserved = new Array(targetLen).fill(null).map(() => []);
+
+  tagged.forEach(t => {
+    let slot = Math.round(t.dist * (targetLen - 1));
+    slot = Math.max(0, Math.min(targetLen-1, slot));
+    reserved[slot].push(t);
+  });
+
+  function resampleOne(points, distances, total, which) {
+    const out = new Array(targetLen).fill(null);
+    // 1) Tags setzen
+    for (let slot = 0; slot < targetLen; slot++) {
+      reserved[slot].forEach(t => {
+        if (t.from === which) out[slot] = { ...points[t.idx] };
+      });
+    }
+
+    // 2) Lücken interpolieren
+    let j = 0;
+    for (let i = 0; i < targetLen; i++) {
+      if (out[i]) continue;
+      const s = (i/(targetLen-1)) * total;
+      while (j < distances.length-2 && distances[j+1] < s) j++;
+      const d0 = distances[j], d1 = distances[j+1];
+      const p0 = points[j], p1 = points[j+1];
+      const f = (d1 - d0) === 0 ? 0 : (s - d0)/(d1 - d0);
+      out[i] = {
+        x: p0.x*(1-f) + p1.x*f,
+        y: p0.y*(1-f) + p1.y*f,
+        tag: null
+      };
+    }
+    return out;
+  }
+
+  const innerNew = resampleOne(innerPts, dIn, lenIn, 'inner');
+  const outerNew = resampleOne(outerPts, dOut, lenOut, 'outer');
+
+  return { innerNew, outerNew };
+};
+
 
