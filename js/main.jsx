@@ -330,7 +330,7 @@ lines.forEach(line => {
 
     //const { innerNew, outerNew } = window.resampleDualArcLength(innerTrimmed, outerTrimmed, profilePointsCount);
 
-    const { innerNew, outerNew } = window.syncTaggedPointsNoDuplicates(innerTrimmed, outerTrimmed);
+    const { innerNew, outerNew } = window.syncTaggedPointsNoDuplicates(innerTrimmed, outerTrimmed, profilePointsCount);
 
     setDebugPoints({ inner: innerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
 

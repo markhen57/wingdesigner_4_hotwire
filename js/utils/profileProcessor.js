@@ -472,280 +472,11 @@ window.resampleArcLength = function(points, targetLen) {
   return out;
 };
 
-/*window.resampleDualArcLength = function(innerPts, outerPts, targetLen) {
-
-  function computeDistances(points) {
-    const dist = [0];
-    for (let i = 1; i < points.length; i++) {
-      dist.push(dist[i-1] + Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y));
-    }
-    return dist;
-  }
-
-  function resampleSegment(points, distances, startIdx, endIdx, outStart, outEnd) {
-    const out = new Array(outEnd - outStart + 1);
-    const d0 = distances[startIdx], d1 = distances[endIdx];
-    for (let i = 0; i <= outEnd - outStart; i++) {
-      const f = (i / (outEnd - outStart));
-      const s = d0*(1-f) + d1*f;
-      // Finde das Intervall
-      let j = startIdx;
-      while (j < endIdx && distances[j+1] < s) j++;
-      const localF = (distances[j+1]-distances[j]) === 0 ? 0 : (s - distances[j]) / (distances[j+1]-distances[j]);
-      out[i] = {
-        x: points[j].x*(1-localF) + points[j+1].x*localF,
-        y: points[j].y*(1-localF) + points[j+1].y*localF,
-        tag: null
-      };
-    }
-    return out;
-  }*/
-
-  /*function resampleWithTags(points, distances, targetLen, tagSlots) {
-    const out = new Array(targetLen).fill(null);
-
-    // 1️⃣ Tags setzen
-    tagSlots.forEach(t => {
-      out[t.slot] = { ...points[t.idx] };
-    });
-
-    // 2️⃣ Zwischenräume interpolieren
-    let lastTagIdx = 0;
-    while (lastTagIdx < targetLen && !out[lastTagIdx]) lastTagIdx++;
-    let nextTagIdx = lastTagIdx + 1;
-    while (nextTagIdx < targetLen) {
-      while (nextTagIdx < targetLen && !out[nextTagIdx]) nextTagIdx++;
-      if (nextTagIdx >= targetLen) break;
-
-      const segment = resampleSegment(
-        points, distances,
-        tagSlots.find(t => t.slot === lastTagIdx).idx,
-        tagSlots.find(t => t.slot === nextTagIdx).idx,
-        lastTagIdx,
-        nextTagIdx
-      );
-      for (let i = 0; i < segment.length; i++) out[lastTagIdx + i] = segment[i];
-
-      lastTagIdx = nextTagIdx;
-      nextTagIdx++;
-    }
-
-    // 3️⃣ Falls vorne/hinten noch Lücken, mit Randpunkten auffüllen
-    for (let i = 0; i < targetLen && !out[i]; i++) out[i] = { ...points[0], tag:null };
-    for (let i = targetLen-1; i >=0 && !out[i]; i--) out[i] = { ...points[points.length-1], tag:null };
-
-    return out;
-  }
-
-  const dIn = computeDistances(innerPts);
-  const dOut = computeDistances(outerPts);
-  const lenIn = dIn[dIn.length-1] || 1;
-  const lenOut = dOut[dOut.length-1] || 1;
-
-  // 🎯 Alle Tags sammeln und proportional zur Bogenlänge auf Slot-Index mappen
-  const tags = [];
-  innerPts.forEach((p,i) => { if(p.tag) tags.push({ from:'inner', idx:i, dist:dIn[i]/lenIn, tag:p.tag }); });
-  outerPts.forEach((p,i) => { if(p.tag) tags.push({ from:'outer', idx:i, dist:dOut[i]/lenOut, tag:p.tag }); });
-
-  // 1 Tag pro unique Name
-  const uniqueTags = [];
-  const seen = new Set();
-  tags.forEach(t => {
-    if(!seen.has(t.tag)) {
-      seen.add(t.tag);
-      uniqueTags.push(t);
-    }
-  });
-
-  const tagSlots = uniqueTags.map(t => {
-    let slot = Math.round(t.dist * (targetLen-1));
-    return {...t, slot};
-  });
-
-// Tag-Slots für beide Profile anhand des Tag-Namens berechnen
-const tagSlots = uniqueTags.map(t => {
-  let slot = Math.round(t.dist * (targetLen-1));
-  return {...t, slot};
-});
-
-// Inner & Outer resample mit synchronisierten Tag-Indices
-const innerNew = resampleWithTags(innerPts, dIn, targetLen,
-    tagSlots.map(t => ({...t, idx: innerPts.findIndex(p => p.tag===t.tag)}))
-);
-const outerNew = resampleWithTags(outerPts, dOut, targetLen,
-    tagSlots.map(t => ({...t, idx: outerPts.findIndex(p => p.tag===t.tag)}))
-);
-
-
-  return { innerNew, outerNew };
-};*/
-
 /*window.syncTaggedPointsNoDuplicates = function(innerPts, outerPts) {
-  function addPoint(arr, p) {
-    const last = arr[arr.length - 1];
-    const eps = 1e-8;
-    if (!last ||
-        Math.abs(last.x - p.x) > eps ||
-        Math.abs(last.y - p.y) > eps ||
-        last.tag !== p.tag) {
-      arr.push(p);
-    }
-  }
-
-  function interpolateSegment(seg, targetLen, skipLast = false) {
-    if (seg.length === 1) return [seg[0]];
-    const out = [];
-    const len = skipLast ? targetLen - 1 : targetLen;
-
-    for (let i = 0; i < len; i++) {
-      const t = targetLen === 1 ? 0 : i / (targetLen - 1);
-      const idxF = t * (seg.length - 1);
-      const idx0 = Math.floor(idxF);
-      const idx1 = Math.min(seg.length - 1, Math.ceil(idxF));
-      const f = idxF - idx0;
-
-      const tag = i === 0 ? seg[0].tag :
-                  i === len - 1 && skipLast ? null :
-                  i === targetLen - 1 ? seg[seg.length - 1].tag : null;
-
-      out.push({
-        x: seg[idx0].x * (1 - f) + seg[idx1].x * f,
-        y: seg[idx0].y * (1 - f) + seg[idx1].y * f,
-        tag: tag
-      });
-    }
-    return out;
-  }
-
-  // --- Alle getaggten Indizes sammeln ---
-  const innerTags = innerPts.map((p, i) => p.tag ? i : null).filter(i => i !== null);
-  const outerTags = outerPts.map((p, i) => p.tag ? i : null).filter(i => i !== null);
-  let allTagIndices = Array.from(new Set([...innerTags, ...outerTags]));
-
-  const maxIdx = Math.max(innerPts.length, outerPts.length) - 1;
-  if (!allTagIndices.includes(maxIdx)) {
-    allTagIndices.push(maxIdx);
-  }
-  allTagIndices.sort((a, b) => a - b);
-
-  const innerNew = [];
-  const outerNew = [];
-  let prevTag = 0;
-
-  allTagIndices.forEach((tagIdx, segmentIdx) => {
-    const innerSeg = innerPts.slice(prevTag, tagIdx + 1);
-    const outerSeg = outerPts.slice(prevTag, tagIdx + 1);
-    const n = Math.max(innerSeg.length, outerSeg.length);
-
-    const isLastSegment = segmentIdx === allTagIndices.length - 1;
-
-    // Im letzten Segment: nur bis n-1 interpolieren → kein 97.96-Punkt
-    const innerInterp = interpolateSegment(innerSeg, n, isLastSegment);
-    const outerInterp = interpolateSegment(outerSeg, n, isLastSegment);
-
-    innerInterp.forEach(p => addPoint(innerNew, p));
-    outerInterp.forEach(p => addPoint(outerNew, p));
-
-    prevTag = tagIdx;
-
-    // Nach dem letzten Segment: exakten END_POINT hinzufügen (nur einmal!)
-    if (isLastSegment) {
-      const endInner = innerPts[innerPts.length - 1];
-      const endOuter = outerPts[outerPts.length - 1];
-      addPoint(innerNew, endInner);
-      addPoint(outerNew, endOuter);
-    }
-  });
-
-  return { innerNew, outerNew };
-};*/
-
-/*window.syncTaggedPointsNoDuplicates = function(innerPts, outerPts) {
-  function addPoint(arr, p) {
-    const last = arr[arr.length - 1];
-    const eps = 1e-8;
-    if (!last ||
-        Math.abs(last.x - p.x) > eps ||
-        Math.abs(last.y - p.y) > eps ||
-        last.tag !== p.tag) {
-      arr.push(p);
-    }
-  }
-
-  function interpolateSegment(seg, targetLen, skipLast = false) {
-    if (seg.length === 1) return [seg[0]];
-    const out = [];
-    const len = skipLast ? targetLen - 1 : targetLen;
-
-    for (let i = 0; i < len; i++) {
-      const t = i / (targetLen - 1);
-      const idxF = t * (seg.length - 1);
-      const idx0 = Math.floor(idxF);
-      const idx1 = Math.min(seg.length - 1, Math.ceil(idxF));
-      const f = idxF - idx0;
-
-      let tag = null;
-      if (i === 0) tag = seg[0].tag;
-      else if (!skipLast && i === targetLen - 1) tag = seg[seg.length - 1].tag;
-      // Im letzten Segment: letzter interpolierter Punkt hat KEIN Tag
-
-      out.push({
-        x: seg[idx0].x * (1 - f) + seg[idx1].x * f,
-        y: seg[idx0].y * (1 - f) + seg[idx1].y * f,
-        tag: tag
-      });
-    }
-    return out;
-  }
-
-  // --- Alle getaggten Indizes sammeln ---
-  const innerTags = innerPts.map((p, i) => p.tag ? i : null).filter(i => i !== null);
-  const outerTags = outerPts.map((p, i) => p.tag ? i : null).filter(i => i !== null);
-  let allTagIndices = Array.from(new Set([...innerTags, ...outerTags]));
-
-  const maxIdx = Math.max(innerPts.length, outerPts.length) - 1;
-  if (!allTagIndices.includes(maxIdx)) {
-    allTagIndices.push(maxIdx);
-  }
-  allTagIndices.sort((a, b) => a - b);
-
-  const innerNew = [];
-  const outerNew = [];
-  let prevTag = 0;
-
-  allTagIndices.forEach((tagIdx, segmentIdx) => {
-    const innerSeg = innerPts.slice(prevTag, tagIdx + 1);
-    const outerSeg = outerPts.slice(prevTag, tagIdx + 1);
-    const n = Math.max(innerSeg.length, outerSeg.length);
-
-    const isLastSegment = segmentIdx === allTagIndices.length - 1;
-
-    // Im letzten Segment: skipLast = true → nur n-1 Punkte
-    const innerInterp = interpolateSegment(innerSeg, n, isLastSegment);
-    const outerInterp = interpolateSegment(outerSeg, n, isLastSegment);
-
-    innerInterp.forEach(p => addPoint(innerNew, p));
-    outerInterp.forEach(p => addPoint(outerNew, p));
-
-    prevTag = tagIdx;
-
-    // --- NUR IM LETZTEN SEGMENT: exakten END_POINT hinzufügen ---
-    if (isLastSegment) {
-      const endInner = innerPts[innerPts.length - 1];
-      const endOuter = outerPts[outerPts.length - 1];
-      addPoint(innerNew, { ...endInner, tag: 'END_POINT' }); // Sicherstellen, dass Tag da ist
-      addPoint(outerNew, { ...endOuter, tag: 'END_POINT' });
-    }
-  });
-
-  return { innerNew, outerNew };
-};*/
-
-window.syncTaggedPointsNoDuplicates = function(innerPts, outerPts) {
   console.log("=== DEBUG SYNC ===");
   console.log("Input: inner=", innerPts.length, "outer=", outerPts.length);
 
-  const POINTS_PER_SEGMENT = 20;
+  const POINTS_PER_SEGMENT = 40;
 
   function addPoint(arr, p) {
     const last = arr[arr.length - 1];
@@ -888,9 +619,317 @@ window.syncTaggedPointsNoDuplicates = function(innerPts, outerPts) {
   console.log("✅ Punktanzahl identisch (Tags wurden erhalten)");
 
   return { innerNew, outerNew };
+};*/
+
+/*window.syncTaggedPointsNoDuplicates = function(innerPts, outerPts) {
+  console.log("=== DEBUG SYNC ===");
+  console.log("Input: inner=", innerPts.length, "outer=", outerPts.length);
+
+  // ✅ Neue Subfunktion proportional nach Segmentlängen
+  function computePointsPerSegment(innerPts, outerPts, tagIndices, totalPoints = 200) {
+    const segLengths = [];
+
+    let prevTag = 0;
+    for (let tagIdx of tagIndices) {
+      // Segment existiert in beiden
+      const innerSeg = innerPts.slice(prevTag, tagIdx + 1);
+      const outerSeg = outerPts.slice(prevTag, tagIdx + 1);
+
+      function length(arr) {
+        let L = 0;
+        for (let i = 1; i < arr.length; i++) {
+          const dx = arr[i].x - arr[i - 1].x;
+          const dy = arr[i].y - arr[i - 1].y;
+          L += Math.hypot(dx, dy);
+        }
+        return L;
+      }
+
+      const L_inner = length(innerSeg);
+      const L_outer = length(outerSeg);
+      const L_avg = (L_inner + L_outer) / 2; // ✅ deine gewünschte Logik
+
+      segLengths.push(L_avg);
+      prevTag = tagIdx;
+    }
+
+    const totalLength = segLengths.reduce((a, b) => a + b, 0);
+    const points = segLengths.map(L => Math.max(2, Math.round((L / totalLength) * totalPoints)));
+
+    // letzte Rundungsanpassung damit Summe exakt stimmt
+    let diff = totalPoints - points.reduce((a, b) => a + b, 0);
+    if (diff !== 0) {
+      points[points.length - 1] += diff;
+    }
+
+    console.log("Proportional segment points:", points);
+    return points; // z.B. [21, 47, 18, 34, ...]
+  }
+
+  function addPoint(arr, p) {
+    const last = arr[arr.length - 1];
+    const eps = 1e-10;
+    const duplicate = last &&
+      Math.abs(last.x - p.x) < eps &&
+      Math.abs(last.y - p.y) < eps;
+    if (!duplicate) arr.push(p);
+  }
+
+  function interpolateSegment(seg, n, skipLast = false) {
+    if (seg.length === 0) return [];
+    if (seg.length === 1) return [ { ...seg[0] } ];
+
+    const out = [];
+    const steps = skipLast ? n : n + 1;
+
+    for (let i = 0; i < steps; i++) {
+      const t = i / n;
+      const idxF = t * (seg.length - 1);
+      const idx0 = Math.floor(idxF);
+      const idx1 = Math.min(seg.length - 1, Math.ceil(idxF));
+      const f = idxF - idx0;
+
+      let tag = null;
+      if (i === 0) tag = seg[0].tag;
+      else if (!skipLast && i === n) tag = seg[seg.length - 1].tag;
+
+      out.push({
+        x: seg[idx0].x * (1 - f) + seg[idx1].x * f,
+        y: seg[idx0].y * (1 - f) + seg[idx1].y * f,
+        tag
+      });
+    }
+    return out;
+  }
+
+  const innerTags = innerPts.map((p, i) => p.tag ? i : null).filter(v => v !== null);
+  const outerTags = outerPts.map((p, i) => p.tag ? i : null).filter(v => v !== null);
+
+  let allTagIndices = [...new Set([...innerTags, ...outerTags])];
+  const maxIdx = Math.max(innerPts.length - 1, outerPts.length - 1);
+  if (!allTagIndices.includes(maxIdx)) allTagIndices.push(maxIdx);
+  allTagIndices.sort((a, b) => a - b);
+
+  console.log("Tag indices:", allTagIndices);
+
+  // ✅ Hier Punktzahlen aus Segmentlängen berechnen (vielleicht 200 gesamt)
+  const pointsPerSeg = computePointsPerSegment(innerPts, outerPts, allTagIndices, 200);
+
+  const innerNew = [];
+  const outerNew = [];
+  let prevTag = 0;
+
+  allTagIndices.forEach((tagIdx, segmentIdx) => {
+    const innerSeg = innerPts.slice(prevTag, tagIdx + 1);
+    const outerSeg = outerPts.slice(prevTag, tagIdx + 1);
+
+    const isLast = segmentIdx === allTagIndices.length - 1;
+    const n = pointsPerSeg[segmentIdx] - 1;
+
+    const innerInterp = interpolateSegment(innerSeg, n, isLast);
+    const outerInterp = interpolateSegment(outerSeg, n, isLast);
+
+    innerInterp.forEach(p => addPoint(innerNew, p));
+    outerInterp.forEach(p => addPoint(outerNew, p));
+
+    if (isLast) {
+      addPoint(innerNew, { ...innerPts[innerPts.length - 1], tag: 'END_POINT' });
+      addPoint(outerNew, { ...outerPts[outerPts.length - 1], tag: 'END_POINT' });
+    }
+
+    prevTag = tagIdx;
+  });
+
+  // ✅ Deine bestehende Längen-Angleichung bleibt exakt erhalten
+  function removeUntaggedFromEnd(arr, count) {
+    let removed = 0;
+    while (removed < count && arr.length > 0) {
+      let i = arr.length - 1;
+      while (i >= 0 && arr[i].tag) i--;
+      if (i < 0) break;
+      arr.splice(i, 1);
+      removed++;
+    }
+    return removed;
+  }
+  function padByDuplicatingEnd(arr, targetLength) {
+    if (!arr.length) return;
+    const last = arr[arr.length - 1];
+    while (arr.length < targetLength) arr.push({ ...last });
+  }
+
+  let lenInner = innerNew.length;
+  let lenOuter = outerNew.length;
+
+  if (lenInner !== lenOuter) {
+    const diff = Math.abs(lenInner - lenOuter);
+    if (lenInner > lenOuter)
+      removeUntaggedFromEnd(innerNew, diff) < diff &&
+        padByDuplicatingEnd(outerNew, lenInner);
+    else
+      removeUntaggedFromEnd(outerNew, diff) < diff &&
+        padByDuplicatingEnd(innerNew, lenOuter);
+  }
+
+  const finalMin = Math.min(innerNew.length, outerNew.length);
+  innerNew.length = finalMin;
+  outerNew.length = finalMin;
+
+  console.log("Output: inner=", innerNew.length, "outer=", outerNew.length);
+
+  return { innerNew, outerNew };
+};*/
+
+window.syncTaggedPointsNoDuplicates = function(innerPts, outerPts, totalTargetPoints = 300) {
+  console.log("=== DEBUG SYNC ===");
+  console.log("Input: inner=", innerPts.length, "outer=", outerPts.length);
+
+  // ✅ Neue Subfunktion proportional nach Segmentlängen
+  function computePointsPerSegment(innerPts, outerPts, tagIndices, totalPoints) {
+    const segLengths = [];
+    let prevTag = 0;
+
+    for (let tagIdx of tagIndices) {
+      const innerSeg = innerPts.slice(prevTag, tagIdx + 1);
+      const outerSeg = outerPts.slice(prevTag, tagIdx + 1);
+
+      function length(arr) {
+        let L = 0;
+        for (let i = 1; i < arr.length; i++) {
+          const dx = arr[i].x - arr[i - 1].x;
+          const dy = arr[i].y - arr[i - 1].y;
+          L += Math.hypot(dx, dy);
+        }
+        return L;
+      }
+
+      const L_inner = length(innerSeg);
+      const L_outer = length(outerSeg);
+      const L_avg = (L_inner + L_outer) / 2;
+
+      segLengths.push(L_avg);
+      prevTag = tagIdx;
+    }
+
+    const totalLength = segLengths.reduce((a, b) => a + b, 0);
+    const points = segLengths.map(L =>
+      Math.max(2, Math.round((L / totalLength) * totalPoints))
+    );
+
+    let diff = totalPoints - points.reduce((a, b) => a + b, 0);
+    if (diff !== 0) points[points.length - 1] += diff;
+
+    console.log("Proportional segment points:", points);
+    return points;
+  }
+
+  function addPoint(arr, p) {
+    const last = arr[arr.length - 1];
+    const eps = 1e-10;
+    if (!last || Math.abs(last.x - p.x) >= eps || Math.abs(last.y - p.y) >= eps) {
+      arr.push(p);
+    }
+  }
+
+  function interpolateSegment(seg, n, skipLast = false) {
+    if (seg.length <= 1) return [ { ...seg[0] } ];
+
+    const out = [];
+    const steps = skipLast ? n : n + 1;
+    for (let i = 0; i < steps; i++) {
+      const t = i / n;
+      const idxF = t * (seg.length - 1);
+      const idx0 = Math.floor(idxF);
+      const idx1 = Math.ceil(idxF);
+      const f = idxF - idx0;
+
+      const tag =
+        i === 0 ? seg[0].tag :
+        (!skipLast && i === n) ? seg[seg.length - 1].tag :
+        null;
+
+      const x = seg[idx0].x * (1 - f) + seg[idx1].x * f;
+      const y = seg[idx0].y * (1 - f) + seg[idx1].y * f;
+
+      out.push({ x, y, tag });
+    }
+    return out;
+  }
+
+  const innerTags = innerPts.map((p, i) => p.tag ? i : null).filter(v => v !== null);
+  const outerTags = outerPts.map((p, i) => p.tag ? i : null).filter(v => v !== null);
+
+  let allTagIndices = [...new Set([...innerTags, ...outerTags])];
+  const maxIdx = Math.max(innerPts.length - 1, outerPts.length - 1);
+  if (!allTagIndices.includes(maxIdx)) allTagIndices.push(maxIdx);
+  allTagIndices.sort((a, b) => a - b);
+
+  console.log("Tag indices:", allTagIndices);
+
+  // ✅ Die Zielpunkte hier rein!
+  const pointsPerSeg = computePointsPerSegment(innerPts, outerPts, allTagIndices, totalTargetPoints);
+
+  const innerNew = [];
+  const outerNew = [];
+  let prevTag = 0;
+
+  allTagIndices.forEach((tagIdx, segmentIdx) => {
+    const innerSeg = innerPts.slice(prevTag, tagIdx + 1);
+    const outerSeg = outerPts.slice(prevTag, tagIdx + 1);
+
+    const isLast = segmentIdx === allTagIndices.length - 1;
+    const n = pointsPerSeg[segmentIdx] - 1;
+
+    const innerInterp = interpolateSegment(innerSeg, n, isLast);
+    const outerInterp = interpolateSegment(outerSeg, n, isLast);
+
+    innerInterp.forEach(p => addPoint(innerNew, p));
+    outerInterp.forEach(p => addPoint(outerNew, p));
+
+    if (isLast) {
+      addPoint(innerNew, { ...innerPts[innerPts.length - 1], tag: 'END_POINT' });
+      addPoint(outerNew, { ...outerPts[outerPts.length - 1], tag: 'END_POINT' });
+    }
+
+    prevTag = tagIdx;
+  });
+
+  function removeUntaggedFromEnd(arr, count) {
+    let removed = 0;
+    while (removed < count && arr.length > 0) {
+      let i = arr.length - 1;
+      while (i >= 0 && arr[i].tag) i--;
+      if (i < 0) break;
+      arr.splice(i, 1);
+      removed++;
+    }
+    return removed;
+  }
+
+  function padByDuplicatingEnd(arr, targetLength) {
+    if (!arr.length) return;
+    const last = arr[arr.length - 1];
+    while (arr.length < targetLength) arr.push({ ...last });
+  }
+
+  if (innerNew.length !== outerNew.length) {
+    const diff = Math.abs(innerNew.length - outerNew.length);
+    if (innerNew.length > outerNew.length) {
+      const removed = removeUntaggedFromEnd(innerNew, diff);
+      if (removed < diff) padByDuplicatingEnd(outerNew, innerNew.length);
+    } else {
+      const removed = removeUntaggedFromEnd(outerNew, diff);
+      if (removed < diff) padByDuplicatingEnd(innerNew, outerNew.length);
+    }
+  }
+
+  const finalMin = Math.min(innerNew.length, outerNew.length);
+  innerNew.length = finalMin;
+  outerNew.length = finalMin;
+
+  console.log("Output: inner=", innerNew.length, "outer=", outerNew.length);
+
+  return { innerNew, outerNew };
 };
-
-
-
 
 
