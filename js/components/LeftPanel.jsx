@@ -10,8 +10,26 @@ window.LeftPanel = function LeftPanel(props) {
     outerColor, setOuterColor, outerScale, setOuterScale, thicknessScaleOuter, setThicknessScaleOuter, rotationOuter, setRotationOuter,
     outerVerticalOffset, setOuterVerticalOffset, outerChordOffset, setOuterChordOffset,
     holes, setHoles, ailerons, setAilerons, trimEnabled, setTrimEnabled, trimLEmm, setTrimLEmm, trimTEmm, setTrimTEmm,
-    activeTab, setActiveTab, debugOpen, setDebugOpen, debugPoints
+    activeTab, setActiveTab, debugOpen, setDebugOpen, debugPoints,
+    //Maschine
+    isActive, onToggle,
+    xName, setXName,
+    yName, setYName,
+    uName, setUName,
+    aName, setAName,
+    axisXmm, setAxisXmm,
+    axisYmm, setAxisYmm,
+    hotwireLength, setHotwireLength,
+    speed, setSpeed,
+    //Foamblock:
+    foamLength, setFoamLength,
+    foamWidth, setFoamWidth,
+    foamHeight, setFoamHeight,
+    foamOffset, setFoamOffset,
+    foamActive, setFoamActive
   } = props;
+
+  const letterOnly = (v) => v.replace(/[^A-Za-z]/g, '').toUpperCase();
 
   return (
     <div style={{ flex: '0 0 500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -90,6 +108,74 @@ window.LeftPanel = function LeftPanel(props) {
         trimTEmm={trimTEmm} setTrimTEmm={setTrimTEmm}
         isActive={activeTab === 'trim'} onToggle={() => setActiveTab(activeTab === 'trim' ? null : 'trim')}
       />
+
+      <div className="profile-box">
+        <div className="profile-header" onClick={onToggle}>Maschinendaten</div>
+
+        {isActive && (
+          <div className="profile-content">
+            <label>X links:
+              <input maxLength={1} value={xName} onChange={e => setXName(letterOnly(e.target.value))} />
+            </label>
+
+            <label>Y links:
+              <input maxLength={1} value={yName} onChange={e => setYName(letterOnly(e.target.value))} />
+            </label>
+
+            <label>X rechts:
+              <input maxLength={1} value={uName} onChange={e => setUName(letterOnly(e.target.value))} />
+            </label>
+
+            <label>Y rechts:
+              <input maxLength={1} value={aName} onChange={e => setAName(letterOnly(e.target.value))} />
+            </label>
+
+            <label>Achslänge X (mm):
+              <input type="number" value={axisXmm} onChange={e => setAxisXmm(Number(e.target.value))} />
+            </label>
+
+            <label>Achslänge Y (mm):
+              <input type="number" value={axisYmm} onChange={e => setAxisYmm(Number(e.target.value))} />
+            </label>
+
+            <label>Hotwire-Länge (mm):
+              <input type="number" value={hotwireLength} onChange={e => setHotwireLength(Number(e.target.value))} />
+            </label>
+
+            <label>Schneidgeschwindigkeit (mm/min):
+              <input type="number" value={speed} onChange={e => setSpeed(Number(e.target.value))} />
+            </label>
+          </div>
+        )}
+      </div>
+
+      <div className="profile-box">
+      <div className="profile-header" onClick={() => setFoamActive(!foamActive)}>
+        Foam Block
+      </div>
+
+      {foamActive && (
+        <div className="profile-content">
+          <label>Länge (mm):
+            <input type="number" value={foamLength} onChange={e => setFoamLength(Number(e.target.value))} />
+          </label>
+
+          <label>Breite (mm):
+            <input type="number" value={foamWidth} onChange={e => setFoamWidth(Number(e.target.value))} />
+          </label>
+
+          <label>Höhe (mm):
+            <input type="number" value={foamHeight} onChange={e => setFoamHeight(Number(e.target.value))} />
+          </label>
+
+          <label>Offset (mm):
+            <input type="number" value={foamOffset} onChange={e => setFoamOffset(Number(e.target.value))} />
+          </label>
+        </div>
+      )}
+    </div>
+
+
       <DebugSection debugPoints={debugPoints} innerName={innerName} outerName={outerName} isOpen={debugOpen} onToggle={() => setDebugOpen(!debugOpen)} />
     </div>
   );
