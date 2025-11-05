@@ -940,7 +940,7 @@ window.syncSegmentPointCounts = function(inner, outer) {
     // Debug
     const innerTag = innerSegment[0]?.tag || null;
     const outerTag = outerSegment[0]?.tag || null;
-    console.log(`Segment: Inner [${i}-${innerEnd - 1}] Tag: ${innerTag}, Outer [${j}-${outerEnd - 1}] Tag: ${outerTag}`);
+    //console.log(`Segment: Inner [${i}-${innerEnd - 1}] Tag: ${innerTag}, Outer [${j}-${outerEnd - 1}] Tag: ${outerTag}`);
 
     const innerCount = innerSegment.length;
     const outerCount = outerSegment.length;
@@ -988,6 +988,113 @@ window.syncSegmentPointCounts = function(inner, outer) {
 
   return { innerNew, outerNew };
 };
+
+// ---------------------------
+// Subfunktion für Debug-Ausgabe
+// ---------------------------
+function debugNearbyPoints(newPoint, segment, startIndex, endIndex, p) {
+  if (newPoint.tag) return; // nur für Punkte ohne Tag
+
+  for (const tagPoint of segment) {
+    if (tagPoint.tag) {
+      const dx = tagPoint.x - newPoint.x;
+      const dy = tagPoint.y - newPoint.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < 0.6) { // Abstand <0.01 als "fast identisch"
+        console.log("⚠ Punkt ohne Tag nahe bei Tag-Punkt gefunden:");
+        console.log({
+          segmentStart: startIndex,
+          segmentEnd: endIndex - 1,
+          pointIndex: startIndex + p,
+          newPoint,
+          nearbyTagPoint: tagPoint,
+          distance: dist
+        });
+        break;
+      }
+    }
+  }
+}
+
+window.interpolateSegmentsAlongPath = function(points) {
+  const result = [];
+  let prevSegmentLastPoint = null;
+
+  let i = 0;
+  while (i < points.length) {
+    const startIndex = i;
+    const startHasTag = !!points[i].tag;
+
+    // Segment-Ende finden
+    let endIndex = startIndex + 1;
+    while (endIndex < points.length && (!!points[endIndex].tag) === startHasTag) {
+      endIndex++;
+    }
+
+    const segment = points.slice(startIndex, endIndex);
+    const N = segment.length;
+
+    if (N === 1) {
+      result.push({ ...segment[0] });
+    } else {
+      // Kumulative Längen berechnen
+      const lengths = [0];
+      for (let k = 1; k < N; k++) {
+        const dx = segment[k].x - segment[k - 1].x;
+        const dy = segment[k].y - segment[k - 1].y;
+        lengths.push(lengths[k - 1] + Math.hypot(dx, dy));
+      }
+      const totalLength = lengths[lengths.length - 1];
+      const step = totalLength / (N - 1);
+
+      let currIndex = 0;
+      for (let p = 0; p < N; p++) {
+        let targetDist = p * step;
+
+        // ⚠ Korrektur: wenn letzter Punkt des vorherigen Segments == erster Punkt des aktuellen
+        if (prevSegmentLastPoint &&
+            segment[0].x === prevSegmentLastPoint.x &&
+            segment[0].y === prevSegmentLastPoint.y &&
+            p === 0) {
+          targetDist = step * 0.5; // ersten Punkt minimal verschieben, damit er interpoliert wird
+        }
+
+        while (currIndex < lengths.length - 1 && lengths[currIndex + 1] < targetDist) {
+          currIndex++;
+        }
+
+        const l0 = lengths[currIndex];
+        const l1 = lengths[currIndex + 1] || l0 + 1; // absichern gegen undefined
+        const t = (targetDist - l0) / (l1 - l0);
+
+        const x0 = segment[currIndex].x;
+        const y0 = segment[currIndex].y;
+        const x1 = segment[currIndex + 1]?.x ?? x0;
+        const y1 = segment[currIndex + 1]?.y ?? y0;
+
+        result.push({
+          x: x0 + (x1 - x0) * t,
+          y: y0 + (y1 - y0) * t,
+          tag: segment[p].tag || null
+        });
+      }
+    }
+
+    prevSegmentLastPoint = segment[N - 1];
+    i = endIndex;
+  }
+
+  return result;
+};
+
+
+
+
+
+
+
+
 
 
 

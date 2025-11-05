@@ -347,7 +347,12 @@ lines.forEach(line => {
 
     //const { innerNew, outerNew } = window.syncTaggedPointsNoDuplicates(innerTrimmed, outerTrimmed, profilePointsCount);
     //const [innerNew, outerNew] = [innerTrimmed, outerTrimmed];
-    const { innerNew, outerNew } = window.syncSegmentPointCounts(innerTrimmed, outerTrimmed);
+    let { innerNew, outerNew } = window.syncSegmentPointCounts(innerTrimmed, outerTrimmed);
+
+    //setDebugPoints({ inner: innerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
+
+    innerNew = window.interpolateSegmentsAlongPath(innerNew);
+    outerNew = window.interpolateSegmentsAlongPath(outerNew);
 
     setDebugPoints({ inner: innerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
 
