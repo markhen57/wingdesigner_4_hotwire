@@ -1104,55 +1104,6 @@ window.projectPointsWithOffset = function(points, offset) {
     return points.map(p => window.projectPointWithOffset(p, offset));
 };
 
-/*window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) {
-    if (innerFinal.length !== outerFinal.length) {
-        throw new Error("Profilpunktlisten müssen gleich lang sein!");
-    }
-
-    const offset = (newSpan - currentSpan) / 2;
-
-    const innerProj = [];
-    const outerProj = [];
-
-    for (let i = 0; i < innerFinal.length; i++) {
-        // Originalpunkte
-        const inner = innerFinal[i];
-        const outer = outerFinal[i];
-
-        // Punkte in 3D setzen
-        const inner3D = { x: inner.x, y: inner.y, z: -currentSpan / 2 };
-        const outer3D = { x: outer.x, y: outer.y, z: +currentSpan / 2 };
-
-        // Vektor von inner -> outer
-        const dx = outer3D.x - inner3D.x;
-        const dy = outer3D.y - inner3D.y;
-        const dz = outer3D.z - inner3D.z;
-
-        const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        const ux = dx / len;
-        const uy = dy / len;
-        const uz = dz / len;
-
-        // Projizierte Punkte entlang des Vektors
-        innerProj.push({
-            x: inner3D.x - ux * offset,
-            y: inner3D.y - uy * offset,
-            z: inner3D.z - uz * offset
-        });
-
-        outerProj.push({
-            x: outer3D.x + ux * offset,
-            y: outer3D.y + uy * offset,
-            z: outer3D.z + uz * offset
-        });
-    }
-
-        return { 
-        innerProjected: innerProj, 
-        outerProjected: outerProj 
-    };
-};*/
-
 window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) {
     if (innerFinal.length !== outerFinal.length) {
         throw new Error("Profilpunktlisten müssen gleich lang sein!");
@@ -1197,15 +1148,57 @@ window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) 
     return [innerProj, outerProj];
 };
 
-/**
- * Fügt Sicherheitsfahrtpunkte vor und nach einem Profil hinzu
- * @param {Array} profilePoints - Array der Profilpunkte [{x, y, z, ...}]
- * @param {Object} offsets - Offset-Werte
- * @param {number} offsets.front - mm vor dem Profil (Approach & Retreat)
- * @param {number} offsets.back - mm hinter dem Profil (Approach)
- * @param {number} offsets.y - Höhe über maximalem Profil (Y-Achse)
- * @returns {Array} - Neues Array: Approach → Profil → Retreat
- */
+window.mirrorProfilesY = function(innerFinal, outerFinal, yOffset = 0) {
+    if (innerFinal.length !== outerFinal.length) {
+        throw new Error("Profilpunktlisten müssen gleich lang sein!");
+    }
+
+    // höchsten Y-Wert über beide Profile bestimmen
+    const allY = [...innerFinal.map(p => p.y), ...outerFinal.map(p => p.y)];
+    const maxY = Math.max(...allY);
+
+    const innerMirrored = [];
+    const outerMirrored = [];
+
+    for (let i = 0; i < innerFinal.length; i++) {
+        const inner = innerFinal[i];
+        const outer = outerFinal[i];
+
+        const mirrorY = 2 * (maxY + yOffset) - inner.y;
+        innerMirrored.push({
+            x: inner.x,
+            y: mirrorY,
+            z: inner.z,
+            ...(inner.tag !== undefined && { tag: inner.tag })
+        });
+
+        const mirrorYOuter = 2 * (maxY + yOffset) - outer.y;
+        outerMirrored.push({
+            x: outer.x,
+            y: mirrorYOuter,
+            z: outer.z,
+            ...(outer.tag !== undefined && { tag: outer.tag })
+        });
+    }
+
+    return [innerMirrored, outerMirrored];
+};
+
+
+window.addRearPoints = function(p, distance = 5, count = 1) {
+    const points = [];
+    for (let i = 1; i <= count; i++) {
+        points.push({
+            x: (p.x ?? 0) + distance * i,
+            y: p.y,
+            z: p.z,
+            ...(p.tag !== undefined && { tag: p.tag }) // Tag übernehmen
+        });
+    }
+    return points;
+}
+
+
 window.addSafeTravelPoints = function(profilePoints, offsets = { front: 5, back: 5, y: 5 }) {
   if (!profilePoints || profilePoints.length === 0) return [];
 

@@ -364,15 +364,25 @@ lines.forEach(line => {
     const innerRotate = innerNew.map(p => window.rotatePoint(p, rotationInner));
     const outerRotate = outerNew.map(p => window.rotatePoint(p, rotationOuter));
 
-    const [innerFinal, outerFinal] = window.projectProfiles(innerRotate, outerRotate, span, span);
-    
+    let [innerFinal, outerFinal] = window.projectProfiles(innerRotate, outerRotate, span, span);
+
+    //hier noch einen endpunkt einfügen
+    const innerFinalExtra = window.addRearPoints(innerFinal[innerFinal.length - 1], 5, 1);
+    const outerFinalExtra = window.addRearPoints(outerFinal[outerFinal.length - 1], 5, 1);
+    innerFinal = [...innerFinalExtra, ...innerFinal, ...innerFinalExtra];
+    outerFinal = [ ...outerFinalExtra, ...outerFinal, ...outerFinalExtra];
+
+    //ab hier spiegeln aktuell mit 3mm abstand bzw. es werden dann 6mm
+    let [innerMirrored, outerMirrored] = window.mirrorProfilesY(innerFinal, outerFinal, 3);
+    innerFinal = [...innerFinal, ...innerMirrored];
+    outerFinal = [...outerFinal, ...outerMirrored];
+
     //exportieren für Useeffect Surface
-    setFinalProfiles({ inner: innerFinal, outer: outerFinal });
-    
+    setFinalProfiles({ inner: innerFinal, outer: outerFinal });    
     let [innerProjected, outerProjected] = window.projectProfiles(innerFinal, outerFinal, span, foamWidth);
 
-    innerProjected = window.addSafeTravelPoints(innerProjected);
-    outerProjected = window.addSafeTravelPoints(outerProjected);
+    //innerProjected = window.addSafeTravelPoints(innerProjected);
+    //outerProjected = window.addSafeTravelPoints(outerProjected);
 
     const [innerProjectedMaschine, outerProjectedMaschine] = window.projectProfiles(innerProjected, outerProjected, foamWidth, hotwireLength);
     
@@ -411,21 +421,6 @@ lines.forEach(line => {
     }
 
     window.addCenterMMGrid(scene, innerFinal, outerFinal, 10, 1);
-
-  /*  if (scene.projectedSurface) {
-      scene.remove(scene.projectedSurface);
-      if (scene.projectedSurface.geometry) scene.projectedSurface.geometry.dispose();
-      if (scene.projectedSurface.material) scene.projectedSurface.material.dispose();
-      scene.projectedSurface = null;
-    }
-
-
-    if (surfaceVisible) {
-      const surfaceMesh = window.createProjectedSurface(scene, innerFinal, outerFinal, 0xff8800, 0.5);
-      scene.projectedSurface = surfaceMesh;
-    }*/
-
-    //window.createProjectedSurface(sceneRef.current, innerFinal, outerFinal, 0xff8800, 0.5);
     
     setDebugPoints({ inner: innerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
   }, [
@@ -656,7 +651,7 @@ useEffect(() => {
       new THREE.BoxGeometry(axisXmm, axisWidth, axisThickness),
       aluMaterial
     );
-    xAxis.position.set(0, 0, axisThickness / 2);
+    xAxis.position.set(axisXmm/2 - axisThickness / 2, 0, axisThickness / 2);
     sideGroup.add(xAxis);
 
     // Linker Block
@@ -664,7 +659,7 @@ useEffect(() => {
       new THREE.BoxGeometry(axisThickness, axisWidth, axisThickness),
       blueMaterial
     );
-    leftBlock.position.set(-axisXmm / 2 + axisThickness / 2, 0, -axisThickness/2);
+    leftBlock.position.set(0, 0, -axisThickness/2);
     sideGroup.add(leftBlock);
 
     // Rechter Block
@@ -672,7 +667,7 @@ useEffect(() => {
       new THREE.BoxGeometry(axisThickness, axisWidth, axisThickness),
       blueMaterial
     );
-    rightBlock.position.set(axisXmm / 2 - axisThickness / 2, 0, -axisThickness/2);
+    rightBlock.position.set(axisXmm - axisThickness, 0, -axisThickness/2);
     sideGroup.add(rightBlock);
 
     // Mittlerer blauer Block
