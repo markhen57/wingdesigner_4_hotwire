@@ -1104,7 +1104,7 @@ window.projectPointsWithOffset = function(points, offset) {
     return points.map(p => window.projectPointWithOffset(p, offset));
 };
 
-window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) {
+/*window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) {
     if (innerFinal.length !== outerFinal.length) {
         throw new Error("Profilpunktlisten müssen gleich lang sein!");
     }
@@ -1151,8 +1151,99 @@ window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) 
         innerProjected: innerProj, 
         outerProjected: outerProj 
     };
+};*/
+
+window.projectProfiles = function(innerFinal, outerFinal, currentSpan, newSpan) {
+    if (innerFinal.length !== outerFinal.length) {
+        throw new Error("Profilpunktlisten müssen gleich lang sein!");
+    }
+
+    const offset = (newSpan - currentSpan) / 2;
+
+    const innerProj = [];
+    const outerProj = [];
+
+    for (let i = 0; i < innerFinal.length; i++) {
+        const inner = innerFinal[i];
+        const outer = outerFinal[i];
+
+        const inner3D = { x: inner.x, y: inner.y, z: -currentSpan / 2 };
+        const outer3D = { x: outer.x, y: outer.y, z: +currentSpan / 2 };
+
+        const dx = outer3D.x - inner3D.x;
+        const dy = outer3D.y - inner3D.y;
+        const dz = outer3D.z - inner3D.z;
+
+        const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        const ux = dx / len;
+        const uy = dy / len;
+        const uz = dz / len;
+
+        innerProj.push({
+            x: inner3D.x - ux * offset,
+            y: inner3D.y - uy * offset,
+            z: inner3D.z - uz * offset,
+            ...(inner.tag !== undefined && { tag: inner.tag })
+        });
+
+        outerProj.push({
+            x: outer3D.x + ux * offset,
+            y: outer3D.y + uy * offset,
+            z: outer3D.z + uz * offset,
+            ...(outer.tag !== undefined && { tag: outer.tag })
+        });
+    }
+
+    return [innerProj, outerProj];
 };
 
+/**
+ * Fügt Sicherheitsfahrtpunkte vor und nach einem Profil hinzu
+ * @param {Array} profilePoints - Array der Profilpunkte [{x, y, z, ...}]
+ * @param {Object} offsets - Offset-Werte
+ * @param {number} offsets.front - mm vor dem Profil (Approach & Retreat)
+ * @param {number} offsets.back - mm hinter dem Profil (Approach)
+ * @param {number} offsets.y - Höhe über maximalem Profil (Y-Achse)
+ * @returns {Array} - Neues Array: Approach → Profil → Retreat
+ */
+window.addSafeTravelPoints = function(profilePoints, offsets = { front: 5, back: 5, y: 5 }) {
+  if (!profilePoints || profilePoints.length === 0) return [];
+
+  const { front, back, y } = offsets;
+
+  // 1️⃣ Max Höhe für sichere Fahrt
+  const maxY = Math.max(...profilePoints.map(p => p.y));
+  const safeY = maxY + y;
+
+  // 2️⃣ Start- & Endpunkte des Profils anhand X-Koordinate
+  let frontPoint = profilePoints[0];  // Punkt vorne (min X)
+  let backPoint  = profilePoints[0];  // Punkt hinten (max X)
+
+  for (const p of profilePoints) {
+    if (p.x < frontPoint.x) frontPoint = p;
+    if (p.x > backPoint.x)  backPoint = p;
+  }
+
+  // 3️⃣ Approach Punkte (Hineinfahren)
+  const approach = [
+    { x: frontPoint.x - front, y: 0,        z: frontPoint.z }, // vor Profil auf Y=0
+    { x: frontPoint.x - front, y: safeY,   z: frontPoint.z }, // hoch auf safeY
+    { x: backPoint.x + back,  y: safeY,   z: backPoint.z },  // vor bis hinter Profil
+    { x: backPoint.x + back,  y: backPoint.y, z: backPoint.z } // runter auf Profilhöhe hinten
+  ];
+
+  // 4️⃣ Retreat Punkte (Rausfahren)
+  const lastProfile = profilePoints[profilePoints.length - 1];
+  const retreat = [
+    { x: backPoint.x + back,  y: backPoint.y, z: backPoint.z },       // hoch vom letzten Punkt
+    { x: backPoint.x + back,  y: safeY,   z: backPoint.z },  // vor bis hinter Profil
+    { x: frontPoint.x - front, y: safeY,   z: frontPoint.z }, // vor bis vorne
+    { x: frontPoint.x - front, y: 0,        z: frontPoint.z }      // runter auf Y=0
+  ];
+
+  // 5️⃣ Gesamtes Array: Approach → Profil → Retreat
+  return [...approach, ...profilePoints, ...retreat];
+};
 
 
 

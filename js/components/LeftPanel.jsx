@@ -26,7 +26,8 @@ window.LeftPanel = function LeftPanel(props) {
     foamWidth, setFoamWidth,
     foamHeight, setFoamHeight,
     foamOffset, setFoamOffset,
-    foamActive, setFoamActive
+    foamActive, setFoamActive,
+    surfaceVisible, setSurfaceVisible
   } = props;
 
   const letterOnly = (v) => v.replace(/[^A-Za-z]/g, '').toUpperCase();
@@ -50,6 +51,11 @@ window.LeftPanel = function LeftPanel(props) {
         Anzahl Punkte pro Profil
         <input type="number" value={profilePointsCount} min="10" max="1000" onChange={e => setProfilePointsCount(Number(e.target.value))} />
         <input type="range" min="10" max="1000" step="1" value={profilePointsCount} onChange={e => setProfilePointsCount(Number(e.target.value))} />
+      </label>
+
+      <label>
+        <input type="checkbox" checked={surfaceVisible} onChange={e => setSurfaceVisible(e.target.checked)} />
+        Surface anzeigen
       </label>
 
       <ProfileBox title="Inner Profil" color={innerColor} isActive={activeTab === 'inner'} onToggle={() => setActiveTab(activeTab === 'inner' ? null : 'inner')}>

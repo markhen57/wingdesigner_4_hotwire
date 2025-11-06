@@ -19,8 +19,11 @@ function HotwireWing3D() {
   const [outerVerticalOffset, setOuterVerticalOffset] = useState(0);
   const [outerChordOffset, setOuterChordOffset] = useState(0);
 
+  const [finalProfiles, setFinalProfiles] = useState({ inner: [], outer: [] });
+
   const [span, setSpan] = useState(500);
   const [profilePointsCount, setProfilePointsCount] = useState(300);
+  const [surfaceVisible, setSurfaceVisible] = useState(true);
   const [holes, setHoles] = useState([{ diameter: 5, xPercent: 0.5, yPercent: 0.5, nPoints: 30 }]);
   const [ailerons, setAilerons] = useState([{ thicknessTop: 2, xPercent: 0.7, frontAngleDeg: 15, rearAngleDeg: 15 }]);
   const [trimEnabled, setTrimEnabled] = useState(false);
@@ -120,7 +123,7 @@ function HotwireWing3D() {
     controlsRef.current = controls;
 
     // Achsenhilfe
-    const axes = new THREE.AxesHelper(span);
+    const axes = new THREE.AxesHelper(40);
     scene.add(axes);
 
     // Marker als Sprite (z.B. für Maus-/Tag-Markierung)
@@ -358,23 +361,30 @@ lines.forEach(line => {
 
     //setDebugPoints({ inner: innerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerNew.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
 
-    const innerFinal = innerNew.map(p => window.rotatePoint(p, rotationInner));
-    const outerFinal = outerNew.map(p => window.rotatePoint(p, rotationOuter));
+    const innerRotate = innerNew.map(p => window.rotatePoint(p, rotationInner));
+    const outerRotate = outerNew.map(p => window.rotatePoint(p, rotationOuter));
 
-    //const innerProjected = window.projectPointsWithOffset(innerFinal, -test_space);
-    //const outerProjected = window.projectPointsWithOffset(outerFinal, test_space);
+    const [innerFinal, outerFinal] = window.projectProfiles(innerRotate, outerRotate, span, span);
+    
+    //exportieren für Useeffect Surface
+    setFinalProfiles({ inner: innerFinal, outer: outerFinal });
+    
+    let [innerProjected, outerProjected] = window.projectProfiles(innerFinal, outerFinal, span, foamWidth);
 
-    const { innerProjected, outerProjected } =  window.projectProfiles(innerFinal, outerFinal, span, foamWidth);
+    innerProjected = window.addSafeTravelPoints(innerProjected);
+    outerProjected = window.addSafeTravelPoints(outerProjected);
 
+    const [innerProjectedMaschine, outerProjectedMaschine] = window.projectProfiles(innerProjected, outerProjected, foamWidth, hotwireLength);
+    
     const scene = sceneRef.current;
-    //if (scene.lines && scene.lines.innerLine) scene.remove(scene.lines.innerLine);
-    //if (scene.lines && scene.lines.outerLine) scene.remove(scene.lines.outerLine);
     window.removeLine(scene, 'innerLine');
     window.removeLine(scene, 'outerLine');
     window.removeLine(scene, 'centerInnerLine');
     window.removeLine(scene, 'centerOuterLine');
     window.removeLine(scene, 'innerProjectedLine');
     window.removeLine(scene, 'outerProjectedLine');
+    window.removeLine(scene, 'innerProjectedMaschineLine');
+    window.removeLine(scene, 'outerProjectedMaschineLine');
 
     const innerLine = window.createLine(innerFinal, -span / 2, parseInt(innerColor.slice(1), 16));
     const outerLine = window.createLine(outerFinal, span / 2, parseInt(outerColor.slice(1), 16));
@@ -385,33 +395,143 @@ lines.forEach(line => {
     const innerProjectedLine = window.createLine(innerProjected, -foamWidth/2, parseInt(innerColor.slice(1), 16), true, 0.5);
     const outerProjectedLine = window.createLine(outerProjected, foamWidth/2, parseInt(outerColor.slice(1), 16), true, 0.5);
 
-    scene.lines = { innerLine, outerLine, centerInnerLine, centerOuterLine, innerProjectedLine, outerProjectedLine };
+    const innerProjectedMaschineLine = window.createLine(innerProjectedMaschine, -hotwireLength/2, parseInt(innerColor.slice(1), 16), true, 0.5);
+    const outerProjectedMaschineLine = window.createLine(outerProjectedMaschine, hotwireLength/2, parseInt(outerColor.slice(1), 16), true, 0.5);
+
+    scene.lines = { innerLine, outerLine, centerInnerLine, centerOuterLine, innerProjectedLine, outerProjectedLine, innerProjectedMaschineLine, outerProjectedMaschineLine };
     scene.add(innerLine);
     scene.add(outerLine);
     scene.add(centerInnerLine);
     scene.add(centerOuterLine);
-    scene.add(innerProjectedLine);
-    scene.add(outerProjectedLine);
+    if (activeTab === 'foam' || activeTab === 'machine') {
+      scene.add(innerProjectedLine);
+      scene.add(outerProjectedLine);
+      scene.add(innerProjectedMaschineLine);
+      scene.add(outerProjectedMaschineLine);
+    }
 
     window.addCenterMMGrid(scene, innerFinal, outerFinal, 10, 1);
 
-    window.createProjectedSurface(sceneRef.current, innerProjected, outerProjected, 0xff8800, 0.5);
+  /*  if (scene.projectedSurface) {
+      scene.remove(scene.projectedSurface);
+      if (scene.projectedSurface.geometry) scene.projectedSurface.geometry.dispose();
+      if (scene.projectedSurface.material) scene.projectedSurface.material.dispose();
+      scene.projectedSurface = null;
+    }
+
+
+    if (surfaceVisible) {
+      const surfaceMesh = window.createProjectedSurface(scene, innerFinal, outerFinal, 0xff8800, 0.5);
+      scene.projectedSurface = surfaceMesh;
+    }*/
+
+    //window.createProjectedSurface(sceneRef.current, innerFinal, outerFinal, 0xff8800, 0.5);
     
     setDebugPoints({ inner: innerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
   }, [
-    innerDAT, outerDAT, 
-    innerScale, outerScale, 
-    span, 
-    profilePointsCount,
-    thicknessScaleInner, thicknessScaleOuter,
-    rotationInner, rotationOuter, 
-    outerVerticalOffset, 
-    outerChordOffset, 
-    holes, 
-    ailerons,
-    trimEnabled, trimLEmm, trimTEmm, 
-    innerColor, outerColor
-  ]);
+  innerDAT,
+  outerDAT,
+  innerScale,
+  outerScale,
+  thicknessScaleInner,
+  thicknessScaleOuter,
+  rotationInner,
+  rotationOuter,
+  outerVerticalOffset,
+  outerChordOffset,
+  span,
+  profilePointsCount,
+  holes,            // Array von Hole-Objekten
+  ailerons,         // Array von Aileron-Objekten
+  trimEnabled,
+  trimLEmm,
+  trimTEmm,
+  innerColor,
+  outerColor,
+  centerInnerColor,
+  centerOuterColor,
+  foamWidth,
+  hotwireLength,
+  activeTab,
+  surfaceVisible
+]);
+
+//Surface Aktivieren/Deaktivieren
+useEffect(() => {
+  const scene = sceneRef.current;
+  if (!scene) return;
+
+  //console.log('[Surface] useEffect triggered. surfaceVisible:', surfaceVisible);
+
+  // === 1. Alte Surface vollständig entfernen ===
+  if (scene.projectedSurface) {
+    const oldMesh = scene.projectedSurface;
+    //console.log('[Surface] Removing old surface');
+
+    scene.remove(oldMesh);
+
+    if (oldMesh.geometry) oldMesh.geometry.dispose();
+    if (oldMesh.material) {
+      if (Array.isArray(oldMesh.material)) {
+        oldMesh.material.forEach(mat => mat.dispose());
+      } else {
+        oldMesh.material.dispose();
+      }
+    }
+
+    scene.projectedSurface = null;
+  }
+
+  // === 2. Neue Surface nur erzeugen, wenn sichtbar und Daten vorhanden ===
+  if (!surfaceVisible) {
+    console.log('[Surface] Surface is hidden, skipping creation');
+    return;
+  }
+
+  const inner = (finalProfiles && finalProfiles.inner) || [];
+  const outer = (finalProfiles && finalProfiles.outer) || [];
+
+  if (inner.length === 0 || outer.length === 0) {
+    console.log('[Surface] No profile points, skipping creation');
+    return;
+  }
+
+  //console.log('[Surface] Creating new surface with', inner.length, 'inner points and', outer.length, 'outer points');
+
+  const surfaceMesh = window.createProjectedSurface(scene, inner, outer, 0xff8800, 0.5);
+
+  if (surfaceMesh) {
+    scene.projectedSurface = surfaceMesh;
+
+    // Wichtig: add nur, wenn createProjectedSurface es nicht automatisch macht
+    if (!scene.children.includes(surfaceMesh)) {
+      scene.add(surfaceMesh);
+    }
+
+    //console.log('[Surface] Surface added to scene');
+  }
+
+  // === 3. Cleanup-Funktion: beim Unmount oder neuem Effekt ===
+  return () => {
+    if (scene.projectedSurface) {
+      const meshToRemove = scene.projectedSurface;
+      //console.log('[Surface] Cleanup: removing surface');
+
+      scene.remove(meshToRemove);
+
+      if (meshToRemove.geometry) meshToRemove.geometry.dispose();
+      if (meshToRemove.material) {
+        if (Array.isArray(meshToRemove.material)) {
+          meshToRemove.material.forEach(m => m.dispose());
+        } else {
+          meshToRemove.material.dispose();
+        }
+      }
+
+      scene.projectedSurface = null;
+    }
+  };
+}, [surfaceVisible, finalProfiles]); 
 
 // Foam Block
 useEffect(() => {
@@ -470,7 +590,9 @@ useEffect(() => {
       map: texture,
       transparent: true,
       opacity: 0.6, // leicht durchscheinend
-      color: 0xffffff
+      color: 0xffffff,
+      depthWrite: false,
+      depthTest: true
     });
 
     const foamBlock = new THREE.Mesh(geometry, material);
@@ -520,15 +642,14 @@ useEffect(() => {
   }
 
   if (activeTab !== 'foam' && activeTab !== 'machine') return;
+  const axisWidth = 50;
+  const axisThickness = 20;
 
-  const createMachineSide = (yOffset) => {
+  const createMachineSide = (yOffset, axisWidth, axisThickness) => {
     const sideGroup = new THREE.Group();
 
     const aluMaterial = new THREE.MeshPhongMaterial({ color: 0xb0b0b0 });
     const blueMaterial = new THREE.MeshPhongMaterial({ color: 0x0077ff });
-
-    const axisThickness = 20;
-    const axisWidth = 50;
 
     // Horizontales Profil (X-Achse)
     const xAxis = new THREE.Mesh(
@@ -588,8 +709,8 @@ useEffect(() => {
   const machineGroup = new THREE.Group();
 
   // zwei Seiten erzeugen: links (-hotwireLength/2) und rechts (+hotwireLength/2)
-  machineGroup.add(createMachineSide(-hotwireLength / 2));
-  machineGroup.add(createMachineSide(hotwireLength / 2));
+  machineGroup.add(createMachineSide(-hotwireLength / 2 - axisWidth / 2 - 5, axisWidth, axisThickness));
+  machineGroup.add(createMachineSide(hotwireLength / 2 + axisWidth / 2 + 5, axisWidth, axisThickness));
 
   // Licht hinzufügen, falls noch nicht vorhanden
   if (!scene.userData.machineLight) {
@@ -665,6 +786,9 @@ useEffect(() => {
           foamWidth={foamWidth} setFoamWidth={setFoamWidth}
           foamHeight={foamHeight} setFoamHeight={setFoamHeight}
           foamOffset={foamOffset} setFoamOffset={setFoamOffset}
+
+          // === Surface Props ===
+          surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
 
         />
         {/* Rechte Canvas-Box mit Tabs */}
