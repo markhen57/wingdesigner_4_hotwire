@@ -1184,8 +1184,7 @@ window.mirrorProfilesY = function(innerFinal, outerFinal, yOffset = 3) {
     return [innerMirrored, outerMirrored];
 };
 
-
-window.addRearPoints = function(p, distance = 5, count = 1) {
+/*window.addRearPoints = function(p, distance = 5, count = 1) {
     const points = [];
     for (let i = 1; i <= count; i++) {
         points.push({
@@ -1194,6 +1193,20 @@ window.addRearPoints = function(p, distance = 5, count = 1) {
             z: p.z,
             ...(p.tag !== undefined && { tag: p.tag }) // Tag übernehmen
         });
+    }
+    return points;
+}*/
+
+window.addRearPoints = function(p, distance = 5, count = 1) {
+    const points = [];
+    for (let i = 1; i <= count; i++) {
+        const point = {
+            x: (p.x ?? 0) + distance * i,
+            y: p.y,
+            z: p.z
+        };
+        if (p.tag !== undefined) point.tag = p.tag; // Tag nur übernehmen, wenn vorhanden
+        points.push(point);
     }
     return points;
 }
@@ -1219,19 +1232,19 @@ window.addSafeTravelPoints = function(profilePoints, offsets = { front: 5, back:
 
   // 3 Approach Punkte (Hineinfahren)
   const approach = [
-    { x: frontPoint.x - front, y: 0,        z: frontPoint.z, tag: PointTag.ENTRY }, // vor Profil auf Y=0
-    { x: frontPoint.x - front, y: safeY,   z: frontPoint.z, tag: PointTag.ENTRY }, // hoch auf safeY
-    { x: backPoint.x,  y: safeY,   z: backPoint.z, tag: PointTag.ENTRY },  // vor bis hinter Profil
+    { x: frontPoint.x - front,    y: 0,        z: frontPoint.z,  tag: PointTag.ENTRY }, // vor Profil auf Y=0
+    { x: frontPoint.x - front,    y: safeY,    z: frontPoint.z,  tag: PointTag.ENTRY }, // hoch auf safeY
+    { x: backPoint.x,             y: safeY,    z: backPoint.z,   tag: PointTag.ENTRY },  // vor bis hinter Profil
     //{ x: backPoint.x + back,  y: backPoint.y, z: backPoint.z } // runter auf Profilhöhe hinten
   ];
 
   // 4 Retreat Punkte (Rausfahren)
   const lastProfile = profilePoints[profilePoints.length - 1];
   const retreat = [
-    { x: backPoint.x + 1,  y: +1, z: backPoint.z, tag: PointTag.EXIT },       // hoch vom letzten Punkt
-    { x: backPoint.x + 1,  y: safeY+1, z: backPoint.z, tag: PointTag.EXIT },  // vor bis hinter Profil
-    { x: frontPoint.x - front-1, y: safeY+1,   z: frontPoint.z, tag: PointTag.EXIT }, // vor bis vorne
-    { x: frontPoint.x - front-1, y: +1,        z: frontPoint.z, tag: PointTag.EXIT }      // runter auf Y=0
+    { x: backPoint.x + 1,         y: +1,       z: backPoint.z,  tag: PointTag.EXIT },       // hoch vom letzten Punkt
+    { x: backPoint.x + 1,         y: safeY+1,  z: backPoint.z,  tag: PointTag.EXIT },  // vor bis hinter Profil
+    { x: frontPoint.x - front,    y: safeY+1,  z: frontPoint.z, tag: PointTag.EXIT }, // vor bis vorne
+    { x: frontPoint.x - front,    y: +1,       z: frontPoint.z, tag: PointTag.EXIT }      // runter auf Y=0
   ];
 
   // 5 Gesamtes Array: Approach → Profil → Retreat

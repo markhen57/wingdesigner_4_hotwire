@@ -46,13 +46,14 @@ function HotwireWing3D() {
   const [machineActive, setMachineActive] = useState(false);
   const [xName, setXName] = useState('X');
   const [yName, setYName] = useState('Y');
-  const [uName, setUName] = useState('U');
+  const [uName, setUName] = useState('Z');
   const [aName, setAName] = useState('A');
   const [axisXmm, setAxisXmm] = useState(1000);
   const [axisYmm, setAxisYmm] = useState(500);
   const [hotwireLength, setHotwireLength] = useState(800);
   const [speed, setSpeed] = useState(200);
   const machineLimits = { X: axisXmm, Y: axisYmm, U: axisXmm, A: axisYmm, Fmax: 400, Fmin: 1};
+  const [hotWirePower, setHotWirePower] = useState(0);
 
   // Foam Block
   const [foamActive, setFoamActive] = useState(false);
@@ -376,8 +377,8 @@ lines.forEach(line => {
 
     //hier noch einen endpunkt einfügen
     if (hotwirePoint) {
-      const innerFinalExtra = window.addRearPoints(innerFinal[innerFinal.length - 1], 5, 1);
-      const outerFinalExtra = window.addRearPoints(outerFinal[outerFinal.length - 1], 5, 1);
+      const innerFinalExtra = window.addRearPoints({ ...innerFinal[innerFinal.length - 1], tag: undefined }, 5, 1);
+      const outerFinalExtra = window.addRearPoints({ ...outerFinal[outerFinal.length - 1], tag: undefined }, 5, 1);
       innerFinal = [...innerFinalExtra, ...innerFinal, ...innerFinalExtra];
       outerFinal = [ ...outerFinalExtra, ...outerFinal, ...outerFinalExtra];
     }
@@ -405,7 +406,7 @@ lines.forEach(line => {
 
     //alle Punkte in X verschieben, damit das Profil im Schaum liegt
     [innerFinal, outerFinal, innerProjected, outerProjected, innerProjectedMaschine, outerProjectedMaschine] =
-      window.shiftX(mirrorGap, innerFinal, outerFinal, innerProjected, outerProjected, innerProjectedMaschine, outerProjectedMaschine);
+      window.shiftX(mirrorGap*2, innerFinal, outerFinal, innerProjected, outerProjected, innerProjectedMaschine, outerProjectedMaschine);
 
     //exportieren für Useeffect Surface
     setFinalProfiles({ inner: innerFinal, outer: outerFinal });   
@@ -446,13 +447,22 @@ lines.forEach(line => {
 
     window.addCenterMMGrid(scene, innerFinal, outerFinal, 10, 1);
     
+    //setDebugPoints({ inner: innerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
     setDebugPoints({ inner: innerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null })), outer: outerFinal.map(p => ({x: p.x, y: p.y, tag: p.tag || null}))});
-
     // G-Code erzeugen
     //const gcode = window.generateG93FourAxis(outerProjectedMaschine, innerProjectedMaschine, machineLimits);
+
+    //const generatedGcode = window.generateG93FourAxis(outerProjectedMaschine, innerProjectedMaschine, feed, machineLimits, tcpOffset)
+    //setGcode(generatedGcode);
     const feed = 100;
     const tcpOffset = { x:0, y:0, z:0 }; //Werkzeugoffset
-    const generatedGcode = window.generateG93FourAxis(outerProjectedMaschine, innerProjectedMaschine, feed, machineLimits, tcpOffset)
+
+    const generatedGcode = [
+      window.generateG93Header({ hotWirePower }), // 1000 = volle Heizleistung
+      window.generateG93FourAxis(innerProjectedMaschine, outerProjectedMaschine, feed, machineLimits, tcpOffset),
+      window.generateG93Footer()
+    ].join('\n');
+
     setGcode(generatedGcode);
 
   }, [

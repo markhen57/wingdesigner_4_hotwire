@@ -72,17 +72,17 @@ window.LeftPanel = function LeftPanel(props) {
       </label>
 
       <label style={{ opacity: hotwirePoint ? 1 : 0.5 }}>
-        <input type="checkbox" checked={mirrorWing} onChange={e => { if (hotwirePoint) setMirrorWing(e.target.checked); if (!e.target.checked) setMachineEntryExit(false); }} disabled={!hotwirePoint} /> 
+        <input type="checkbox" checked={mirrorWing} onChange={e => { if (hotwirePoint) setMirrorWing(e.target.checked); }} disabled={!hotwirePoint}  /> 
         Tragfläche spiegeln
       </label>
 
-      <label style={{ opacity: mirrorWing && hotwirePoint ? 1 : 0.5 }}>Abstand Ober-/Unterfläche (mm) 
-        <input type="number" value={mirrorGap} onChange={e => setMirrorGap(Number(e.target.value))} disabled={!mirrorWing || !hotwirePoint} /> 
-        <input type="range" min="1" max="10" step="0.1" value={mirrorGap} onChange={e => setMirrorGap(Number(e.target.value))} disabled={!mirrorWing || !hotwirePoint} />
+      <label style={{ opacity: hotwirePoint ? 1 : 0.5 }}>Abstand Vorne, Mirror Flächen (wenn aktiv), Unten (mm) 
+        <input type="number" value={mirrorGap} onChange={e => setMirrorGap(Number(e.target.value))} disabled={!hotwirePoint} /> 
+        <input type="range" min="1" max="10" step="0.1" value={mirrorGap} onChange={e => setMirrorGap(Number(e.target.value))} disabled={!hotwirePoint} />
       </label>
 
-      <label style={{ opacity: mirrorWing && hotwirePoint ? 1 : 0.5 }}>
-        <input type="checkbox" checked={machineEntryExit} onChange={e => { if (mirrorWing && hotwirePoint) setMachineEntryExit(e.target.checked); }} disabled={!mirrorWing || !hotwirePoint} /> 
+      <label style={{ opacity: hotwirePoint ? 1 : 0.5 }}>
+        <input type="checkbox" checked={machineEntryExit} onChange={e => { if (hotwirePoint) setMachineEntryExit(e.target.checked); }} disabled={!hotwirePoint}  /> 
         Maschine ein-/ausfahren
       </label>
   
