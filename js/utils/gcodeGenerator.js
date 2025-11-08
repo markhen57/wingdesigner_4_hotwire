@@ -20,7 +20,9 @@ window.generateG93HeaderComments = function({
   axisYmm,
   foamLength,
   foamWidth,
-  foamHeight
+  foamHeight,
+  wireDiameter,
+  kerfSide
 } = {}) {
   const lines = [
     `; Wing root airfoil: ${innerName}, scale: ${innerScale}%, rotation: ${rotationInner}°, thickness scale: ${thicknessScaleInner}`,
@@ -32,7 +34,9 @@ window.generateG93HeaderComments = function({
     `; Foam block length: ${foamLength} mm`,
     `; Machine ${axisNames.X || 'X'}/${axisNames.Y || 'Y'} axis length: ${axisXmm} / ${axisYmm} mm`,
     `; Cutting speed: ${speed} mm/min`,
-    `; Hot wire relay control: ${hotWirePower > 0 ? 'ON' : 'OFF'}`
+    `; Hot wire relay control: ${hotWirePower > 0 ? 'ON' : 'OFF'}`,
+    `; Wire diameter: ${wireDiameter} mm`,
+    `; Kerf side: ${kerfSide}`
   ];
 
   return lines.join('\n');
@@ -80,7 +84,7 @@ window.generateG93Footer = function(axisNames = {}) {
   return lines.join('\n');
 };
 
-window.generateG93FourAxis = function(innerPoints, outerPoints, feed = 100, machineLimits = {}, axisNames = {}, tcpOffset = {x:0,y:0}) {
+window.generateG93FourAxis = function(innerPoints, outerPoints, feed = 100, machineLimits = {}, axisNames = {}, tcpOffset = {x:0,y:0}, wireDiameter = 0, kerfSide = 'none' ) {
   if (!Array.isArray(innerPoints) || !Array.isArray(outerPoints)) return '';
   if (innerPoints.length !== outerPoints.length) throw new Error("Inner und Outer Points müssen gleiche Länge haben!");
   if (innerPoints.length < 2) return '';
@@ -131,6 +135,31 @@ window.generateG93FourAxis = function(innerPoints, outerPoints, feed = 100, mach
 
   const getRadialDistance = (start, end) => Math.abs(end - start) * (Math.PI / 180);
 
+  // =======================
+  // Kerf Hilfsfunktionen
+  // =======================
+  const computeNormal = (p0, p1) => {
+    const dx = p1.x - p0.x;
+    const dy = p1.y - p0.y;
+    const length = Math.sqrt(dx*dx + dy*dy);
+    if (length === 0) return {x:0,y:0};
+    return { x: -dy/length, y: dx/length }; // Normal nach links
+  };
+
+  const applyKerfOffset = (p, normal, side, wireDiameter) => {
+    if (side === 'none') return { ...p };
+    const offset = wireDiameter / 2;
+    const factor = (side === 'outer') ? 1 : -1;
+    return {
+      x: p.x + normal.x * offset * factor,
+      y: p.y + normal.y * offset * factor,
+      tag: p.tag
+    };
+  };
+
+  // =======================
+  // G-Code Generierung
+  // =======================
   const lines = [];
   lines.push('G93 ; Inverse Time Feedrate aktivieren');
 
@@ -146,10 +175,20 @@ window.generateG93FourAxis = function(innerPoints, outerPoints, feed = 100, mach
     const rawOstart = outerPoints[i - 1];
     const rawOend   = outerPoints[i];
 
-    const Istart = applyTCPAndLimits(innerPoints[i - 1]);
+    // Normalen berechnen
+    const normalInner = computeNormal(rawIstart, rawIend);
+    const normalOuter = computeNormal(rawOstart, rawOend);
+
+        // Kerf anwenden
+    const Istart = applyTCPAndLimits(applyKerfOffset(rawIstart, normalInner, kerfSide, wireDiameter));
+    const Iend   = applyTCPAndLimits(applyKerfOffset(rawIend,   normalInner, kerfSide, wireDiameter));
+    const Ostart = applyTCPAndLimits(applyKerfOffset(rawOstart, normalOuter, kerfSide, wireDiameter));
+    const Oend   = applyTCPAndLimits(applyKerfOffset(rawOend,   normalOuter, kerfSide, wireDiameter));
+
+    /*const Istart = applyTCPAndLimits(innerPoints[i - 1]);
     const Iend   = applyTCPAndLimits(innerPoints[i]);
     const Ostart = outerPoints[i - 1];
-    const Oend   = outerPoints[i];
+    const Oend   = outerPoints[i];*/
 
     // Korrektur: Z und A Werte richtig zuweisen
     let { z: Zstart, a: Astart } = clipRotary(Ostart.y, Ostart.x);

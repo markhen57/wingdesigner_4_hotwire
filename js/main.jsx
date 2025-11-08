@@ -58,6 +58,8 @@ function HotwireWing3D() {
   const [speed, setSpeed] = useState(200);
   const machineLimits = { X: axisXmm, Y: axisYmm, Z: axisXmm, A: axisYmm, Fmax: fMax, Fmin: fMin};
   const [hotWirePower, setHotWirePower] = useState(1);
+  const [wireDiameter, setWireDiameter] = useState(0.4); // z. B. 0.6 mm // Drahtdurchmesser in mm
+  const [kerfSide, setKerfSide] = useState('none'); // Kerf-Seite: 'inner', 'outer' oder 'none'
 
   // Foam Block
   const [foamActive, setFoamActive] = useState(false);
@@ -480,10 +482,21 @@ lines.forEach(line => {
         axisYmm: axisYmm,
         foamLength: foamLength,
         foamWidth: foamWidth,
-        foamHeight: foamHeight
+        foamHeight: foamHeight,
+        wireDiameter: wireDiameter,
+        kerfSide: kerfSide,
       }),
       window.generateG93Header({ hotWirePower }, axisNames), // 1000 = volle Heizleistung
-      window.generateG93FourAxis(innerProjectedMaschine, outerProjectedMaschine, speed, machineLimits, axisNames, tcpOffset),
+      window.generateG93FourAxis(
+        innerProjectedMaschine, 
+        outerProjectedMaschine, 
+        speed, 
+        machineLimits, 
+        axisNames, 
+        tcpOffset, 
+        wireDiameter,
+        kerfSide
+      ),
       window.generateG93Footer(axisNames)
     ].join('\n');
 
@@ -526,7 +539,9 @@ lines.forEach(line => {
   xName,
   yName,
   zName,
-  aName          
+  aName,
+  wireDiameter,
+  kerfSide          
 ]);
 
 //Surface Aktivieren/Deaktivieren
@@ -565,7 +580,7 @@ useEffect(() => {
   const outer = (finalProfiles && finalProfiles.outer) || [];
 
   if (inner.length === 0 || outer.length === 0) {
-    console.log('[Surface] No profile points, skipping creation');
+    //console.log('[Surface] No profile points, skipping creation');
     return;
   }
 
@@ -868,6 +883,8 @@ useEffect(() => {
           fMax={fMax} setFMax={setFMax}
           fMin={fMin} setFMin={setFMin}
           hotWirePower={hotWirePower} setHotWirePower={setHotWirePower}
+          wireDiameter={wireDiameter} setWireDiameter={setWireDiameter}
+          kerfSide={kerfSide} setKerfSide={setKerfSide}
         />
         {/* Rechte Canvas-Box mit Tabs */}
         <div style={{flex: 1, minHeight: 0, position: 'relative'}}>

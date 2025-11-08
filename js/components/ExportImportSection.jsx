@@ -9,6 +9,8 @@ const ExportImportSection = ({
   span, setSpan, trimEnabled, setTrimEnabled, trimLEmm, setTrimLEmm, trimTEmm, setTrimTEmm,
   foamLength, setFoamLength, foamWidth, setFoamWidth, foamHeight, setFoamHeight,
   holes, setHoles, ailerons, setAilerons,
+  wireDiameter, setWireDiameter,
+  kerfSide, setKerfSide,
   isOpen, onToggle
 }) => {
 
@@ -24,7 +26,7 @@ const ExportImportSection = ({
 
   const exportAll = () => {
     const data = {
-      machine: { xName, yName, zName, aName, axisXmm, axisYmm, hotwireLength, speed, fMax, fMin, hotWirePower },
+      machine: { xName, yName, zName, aName, axisXmm, axisYmm, hotwireLength, speed, fMax, fMin, hotWirePower, wireDiameter, kerfSide },
       wing: { innerName, innerColor, innerScale, thicknessScaleInner, rotationInner, outerName, outerColor, outerScale, thicknessScaleOuter, rotationOuter, outerVerticalOffset, outerChordOffset, span, trimEnabled, trimLEmm, trimTEmm, holes, ailerons },
       profil: { innerDAT, outerDAT },
       foam: { foamLength, foamWidth, foamHeight }
@@ -34,7 +36,7 @@ const ExportImportSection = ({
 
   const exportMachineFoam = () => {
     const data = {
-      machine: { xName, yName, zName, aName, axisXmm, axisYmm, hotwireLength, speed, fMax, fMin, hotWirePower },
+      machine: { xName, yName, zName, aName, axisXmm, axisYmm, hotwireLength, speed, fMax, fMin, hotWirePower, wireDiameter, kerfSide  },
       foam: { foamLength, foamWidth, foamHeight }
     };
     downloadJSON(data, 'machine_foam.json');
@@ -71,6 +73,8 @@ const ExportImportSection = ({
           setFMax(data.machine.fMax);
           setFMin(data.machine.fMin);
           setHotWirePower(data.machine.hotWirePower);
+          setWireDiameter(data.maschine.wireDiameter);
+          setKerfSide(data.maschine.kerfSide);
         }
         if (data.wing) {
           setInnerName(data.wing.innerName);

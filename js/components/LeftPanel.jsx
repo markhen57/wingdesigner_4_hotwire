@@ -38,6 +38,8 @@ window.LeftPanel = function LeftPanel(props) {
     fMax, setFMax, 
     fMin, setFMin,
     hotWirePower, setHotWirePower,
+    wireDiameter, setWireDiameter,
+    kerfSide, setKerfSide,
     exportImportIsOpen, toggleExportImport, 
   } = props;
 
@@ -194,6 +196,18 @@ window.LeftPanel = function LeftPanel(props) {
               <input type="number" value={hotWirePower} min={0} onChange={e => setHotWirePower(Number(e.target.value))} />
             </label>
 
+            <label>Drahtdurchmesser (mm):
+              <input type="number" step="0.01" value={wireDiameter} onChange={e => setWireDiameter(Number(e.target.value))} />
+            </label>
+
+            <label>Kerf-Seite:
+              <select value={kerfSide} onChange={e => setKerfSide(e.target.value)}>
+                <option value="none">None</option>
+                <option value="inner">Inner</option>
+                <option value="outer">Outer</option>
+              </select>
+            </label>
+
           </div>
         )}
       </div>
@@ -241,6 +255,8 @@ window.LeftPanel = function LeftPanel(props) {
       fMax={fMax} setFMax={setFMax}
       fMin={fMin} setFMin={setFMin}
       hotWirePower={hotWirePower} setHotWirePower={setHotWirePower}
+      wireDiameter={wireDiameter} setWireDiameter={setWireDiameter}
+      kerfSide={kerfSide} setKerfSide={setKerfSide}
 
       innerName={innerName} setInnerName={setInnerName}
       innerColor={innerColor} setInnerColor={setInnerColor}
