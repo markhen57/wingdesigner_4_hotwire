@@ -1160,7 +1160,8 @@ window.mirrorProfilesY = function(innerFinal, outerFinal, yOffset = 3) {
     const innerMirrored = [];
     const outerMirrored = [];
 
-    for (let i = 0; i < innerFinal.length; i++) {
+    for (let i = innerFinal.length - 1; i >= 0; i--) { // von hinten nach vorne iterieren
+    //for (let i = 0; i < innerFinal.length; i++) {
         const inner = innerFinal[i];
         const outer = outerFinal[i];
 
