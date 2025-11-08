@@ -35,6 +35,7 @@ function HotwireWing3D() {
   const [gcode, setGcode] = React.useState('');
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugPoints, setDebugPoints] = useState({ inner: [], outer: [] });
+  const [exportImportIsOpen, setExportImportIsOpen] = React.useState(false);
 
     // === Schritte fuer Maschinenein und Ausfahrt sowie spiegeln ===
   const [hotwirePoint, setHotwirePoint] = useState(false);
@@ -46,21 +47,23 @@ function HotwireWing3D() {
   const [machineActive, setMachineActive] = useState(false);
   const [xName, setXName] = useState('X');
   const [yName, setYName] = useState('Y');
-  const [uName, setUName] = useState('Z');
+  const [zName, setZName] = useState('Z');
   const [aName, setAName] = useState('A');
+  const axisNames = { X: xName, Y: yName, Z: zName, A: aName };
   const [axisXmm, setAxisXmm] = useState(1000);
   const [axisYmm, setAxisYmm] = useState(500);
+  const [fMax, setFMax] = useState(400);
+  const [fMin, setFMin] = useState(1);
   const [hotwireLength, setHotwireLength] = useState(800);
   const [speed, setSpeed] = useState(200);
-  const machineLimits = { X: axisXmm, Y: axisYmm, U: axisXmm, A: axisYmm, Fmax: 400, Fmin: 1};
-  const [hotWirePower, setHotWirePower] = useState(0);
+  const machineLimits = { X: axisXmm, Y: axisYmm, Z: axisXmm, A: axisYmm, Fmax: fMax, Fmin: fMin};
+  const [hotWirePower, setHotWirePower] = useState(1);
 
   // Foam Block
   const [foamActive, setFoamActive] = useState(false);
   const [foamLength, setFoamLength] = useState(1000); // mm
   const [foamWidth, setFoamWidth] = useState(600);   // mm
   const [foamHeight, setFoamHeight] = useState(300); // mm
-  const [foamOffset, setFoamOffset] = useState(100);   // mm
 
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
@@ -454,13 +457,34 @@ lines.forEach(line => {
 
     //const generatedGcode = window.generateG93FourAxis(outerProjectedMaschine, innerProjectedMaschine, feed, machineLimits, tcpOffset)
     //setGcode(generatedGcode);
-    const feed = 100;
+    //const feed = 100;
     const tcpOffset = { x:0, y:0, z:0 }; //Werkzeugoffset
 
     const generatedGcode = [
-      window.generateG93Header({ hotWirePower }), // 1000 = volle Heizleistung
-      window.generateG93FourAxis(innerProjectedMaschine, outerProjectedMaschine, feed, machineLimits, tcpOffset),
-      window.generateG93Footer()
+      window.generateG93HeaderComments({
+        innerName: innerName,
+        outerName: outerName,
+        innerScale: innerScale,
+        outerScale: outerScale,
+        rotationInner: rotationInner,
+        rotationOuter: rotationOuter,
+        thicknessScaleInner: thicknessScaleInner,
+        thicknessScaleOuter: thicknessScaleOuter,
+        outerChordOffset: outerChordOffset,
+        outerVerticalOffset: outerVerticalOffset,
+        span: span,
+        speed: speed,
+        hotWirePower: hotWirePower,
+        axisNames: axisNames,
+        axisXmm: axisXmm,
+        axisYmm: axisYmm,
+        foamLength: foamLength,
+        foamWidth: foamWidth,
+        foamHeight: foamHeight
+      }),
+      window.generateG93Header({ hotWirePower }, axisNames), // 1000 = volle Heizleistung
+      window.generateG93FourAxis(innerProjectedMaschine, outerProjectedMaschine, speed, machineLimits, axisNames, tcpOffset),
+      window.generateG93Footer(axisNames)
     ].join('\n');
 
     setGcode(generatedGcode);
@@ -494,7 +518,15 @@ lines.forEach(line => {
   hotwirePoint,
   mirrorWing,
   mirrorGap,
-  machineEntryExit
+  machineEntryExit,
+  speed,            
+  fMax,             
+  fMin,
+  hotWirePower,
+  xName,
+  yName,
+  zName,
+  aName          
 ]);
 
 //Surface Aktivieren/Deaktivieren
@@ -638,7 +670,7 @@ useEffect(() => {
 
     const foamBlock = new THREE.Mesh(geometry, material);
 
-    // Positionierung: X verschoben um foamOffset + halbe Länge
+    // Positionierung: X verschoben um foamLength/halbe Länge
     foamBlock.position.set(
       foamLength/2,
       0,
@@ -654,7 +686,7 @@ useEffect(() => {
     machineActive,
     xName,
     yName,
-    uName,
+    zName,
     aName,
     axisXmm,
     axisYmm,
@@ -664,7 +696,6 @@ useEffect(() => {
     foamLength,
     foamWidth,
     foamHeight,
-    foamOffset
   ]);
 
 //Maschine
@@ -808,6 +839,7 @@ useEffect(() => {
           trimEnabled={trimEnabled} setTrimEnabled={setTrimEnabled} 
           trimLEmm={trimLEmm} setTrimLEmm={setTrimLEmm} trimTEmm={trimTEmm} setTrimTEmm={setTrimTEmm}
           activeTab={activeTab} setActiveTab={setActiveTab} 
+          exportImportIsOpen={exportImportIsOpen} toggleExportImport={() => setExportImportIsOpen(!exportImportIsOpen)}
           gcodeOpen={gcodeOpen} setGcodeOpen={setGcodeOpen} gcode={gcode}                        // <--- GCode jetzt über State
           debugOpen={debugOpen} setDebugOpen={setDebugOpen} debugPoints={debugPoints}
 
@@ -815,7 +847,7 @@ useEffect(() => {
           isActive={machineActive} onToggle={() => setMachineActive(!machineActive)}
           xName={xName} setXName={setXName}
           yName={yName} setYName={setYName}
-          uName={uName} setUName={setUName}
+          zName={zName} setZName={setZName}
           aName={aName} setAName={setAName}
           axisXmm={axisXmm} setAxisXmm={setAxisXmm}
           axisYmm={axisYmm} setAxisYmm={setAxisYmm}
@@ -826,7 +858,6 @@ useEffect(() => {
           foamLength={foamLength} setFoamLength={setFoamLength}
           foamWidth={foamWidth} setFoamWidth={setFoamWidth}
           foamHeight={foamHeight} setFoamHeight={setFoamHeight}
-          foamOffset={foamOffset} setFoamOffset={setFoamOffset}
           // === Surface Props ===
           surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
           //spiegeln und Ausfahrpunkte
@@ -834,6 +865,9 @@ useEffect(() => {
           mirrorWing={mirrorWing} setMirrorWing={setMirrorWing}
           mirrorGap={mirrorGap} setMirrorGap={setMirrorGap}
           machineEntryExit={machineEntryExit} setMachineEntryExit={setMachineEntryExit}
+          fMax={fMax} setFMax={setFMax}
+          fMin={fMin} setFMin={setFMin}
+          hotWirePower={hotWirePower} setHotWirePower={setHotWirePower}
         />
         {/* Rechte Canvas-Box mit Tabs */}
         <div style={{flex: 1, minHeight: 0, position: 'relative'}}>

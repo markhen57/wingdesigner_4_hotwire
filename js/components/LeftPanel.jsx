@@ -4,7 +4,7 @@
 window.LeftPanel = function LeftPanel(props) {
   const { 
     cameraPosRef, cameraTargetRef,
-    innerDAT, outerDAT, innerName, outerName, handleFile,
+    innerDAT, outerDAT, innerName, setInnerName, outerName, setOuterName, handleFile,
     span, setSpan, profilePointsCount, setProfilePointsCount,
     innerColor, setInnerColor, innerScale, setInnerScale, thicknessScaleInner, setThicknessScaleInner, rotationInner, setRotationInner,
     outerColor, setOuterColor, outerScale, setOuterScale, thicknessScaleOuter, setThicknessScaleOuter, rotationOuter, setRotationOuter,
@@ -17,7 +17,7 @@ window.LeftPanel = function LeftPanel(props) {
     isActive, onToggle,
     xName, setXName,
     yName, setYName,
-    uName, setUName,
+    zName, setZName,
     aName, setAName,
     axisXmm, setAxisXmm,
     axisYmm, setAxisYmm,
@@ -27,7 +27,6 @@ window.LeftPanel = function LeftPanel(props) {
     foamLength, setFoamLength,
     foamWidth, setFoamWidth,
     foamHeight, setFoamHeight,
-    foamOffset, setFoamOffset,
     foamActive, setFoamActive,
     //Surface
     surfaceVisible, setSurfaceVisible,
@@ -35,7 +34,11 @@ window.LeftPanel = function LeftPanel(props) {
     hotwirePoint, setHotwirePoint,
     mirrorWing, setMirrorWing,
     mirrorGap, setMirrorGap,
-    machineEntryExit, setMachineEntryExit
+    machineEntryExit, setMachineEntryExit,
+    fMax, setFMax, 
+    fMin, setFMin,
+    hotWirePower, setHotWirePower,
+    exportImportIsOpen, toggleExportImport, 
   } = props;
 
   const letterOnly = (v) => v.replace(/[^A-Za-z]/g, '').toUpperCase();
@@ -156,7 +159,7 @@ window.LeftPanel = function LeftPanel(props) {
             </label>
 
             <label>X rechts:
-              <input maxLength={1} value={uName} onChange={e => setUName(letterOnly(e.target.value))} />
+              <input maxLength={1} value={zName} onChange={e => setZName(letterOnly(e.target.value))} />
             </label>
 
             <label>Y rechts:
@@ -175,9 +178,22 @@ window.LeftPanel = function LeftPanel(props) {
               <input type="number" value={hotwireLength} onChange={e => setHotwireLength(Number(e.target.value))} />
             </label>
 
-            <label>Schneidgeschwindigkeit (mm/min):
+            <label>Ziel-Feedrate (mm/min):
               <input type="number" value={speed} onChange={e => setSpeed(Number(e.target.value))} />
             </label>
+
+            <label>Max. Feedrate (mm/min):
+              <input type="number" value={fMax} min={fMin} onChange={e => setFMax(Number(e.target.value))} />
+            </label>
+
+            <label>Min. Feedrate (mm/min):
+              <input type="number" value={fMin} max={fMax} onChange={e => setFMin(Number(e.target.value))} />
+            </label>
+
+            <label>HotWire Power (S....):
+              <input type="number" value={hotWirePower} min={0} onChange={e => setHotWirePower(Number(e.target.value))} />
+            </label>
+
           </div>
         )}
       </div>
@@ -198,13 +214,9 @@ window.LeftPanel = function LeftPanel(props) {
             <input type="number" value={foamHeight} onChange={e => setFoamHeight(Number(e.target.value))} />
           </label>
 
-          <label>Offset (mm):
-            <input type="number" value={foamOffset} onChange={e => setFoamOffset(Number(e.target.value))} />
-          </label>
         </div>
       )}
     </div>
-
 
     <GCodeSection
       gcode={gcode}        // vom useState gesetzt
@@ -214,6 +226,47 @@ window.LeftPanel = function LeftPanel(props) {
       fileName="wing_program.nc"
     />
 
+    <ExportImportSection
+      xName={xName} setXName={setXName}
+      yName={yName} setYName={setYName}
+      zName={zName} setZName={setZName}
+      aName={aName} setAName={setAName}
+      axisXmm={axisXmm} setAxisXmm={setAxisXmm}
+      axisYmm={axisYmm} setAxisYmm={setAxisYmm}
+      hotwireLength={hotwireLength} setHotwireLength={setHotwireLength}
+      speed={speed} setSpeed={setSpeed}
+      fMax={fMax} setFMax={setFMax}
+      fMin={fMin} setFMin={setFMin}
+      hotWirePower={hotWirePower} setHotWirePower={setHotWirePower}
+
+      innerName={innerName} setInnerName={setInnerName}
+      innerColor={innerColor} setInnerColor={setInnerColor}
+      innerScale={innerScale} setInnerScale={setInnerScale}
+      thicknessScaleInner={thicknessScaleInner} setThicknessScaleInner={setThicknessScaleInner}
+      rotationInner={rotationInner} setRotationInner={setRotationInner}
+
+      outerName={outerName} setOuterName={setOuterName}
+      outerColor={outerColor} setOuterColor={setOuterColor}
+      outerScale={outerScale} setOuterScale={setOuterScale}
+      thicknessScaleOuter={thicknessScaleOuter} setThicknessScaleOuter={setThicknessScaleOuter}
+      rotationOuter={rotationOuter} setRotationOuter={setRotationOuter}
+      outerVerticalOffset={outerVerticalOffset} setOuterVerticalOffset={setOuterVerticalOffset}
+      outerChordOffset={outerChordOffset} setOuterChordOffset={setOuterChordOffset}
+
+      span={span} setSpan={setSpan}
+      trimEnabled={trimEnabled} setTrimEnabled={setTrimEnabled}
+      trimLEmm={trimLEmm} setTrimLEmm={setTrimLEmm}
+      trimTEmm={trimTEmm} setTrimTEmm={setTrimTEmm}
+
+      foamLength={foamLength} setFoamLength={setFoamLength}
+      foamWidth={foamWidth} setFoamWidth={setFoamWidth}
+      foamHeight={foamHeight} setFoamHeight={setFoamHeight}
+
+      holes={holes} setHoles={setHoles}
+      ailerons={ailerons} setAilerons={setAilerons}
+
+      isOpen={exportImportIsOpen} onToggle={toggleExportImport}
+    />
 
       <DebugSection debugPoints={debugPoints} innerName={innerName} outerName={outerName} isOpen={debugOpen} onToggle={() => setDebugOpen(!debugOpen)} />
     </div>
