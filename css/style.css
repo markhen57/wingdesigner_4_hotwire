@@ -1,5 +1,40 @@
 /* style.css */
 
+/* =========================
+   Obere Leiste für GitHub & Lizenz
+   ========================= */
+#top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to right, #24292e, #2c3e50);
+  color: #fff;
+  padding: 8px 16px;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  justify-content: flex-start; /* linksbündig */
+  gap: 16px; /* Abstand zwischen Links */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 1000;
+  transition: background 0.3s;
+}
+
+#top-bar a {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.3s, color 0.3s;
+}
+
+#top-bar a:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f0f0f0;
+}
+
 .profile-box {
   border: 1px solid #aaa;
   border-radius: 6px;
