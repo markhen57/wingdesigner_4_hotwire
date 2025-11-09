@@ -75,12 +75,22 @@ window.langDE = {
   delete: "Löschen",
   addHole: "Neues Loch",
 
-  // lang.de.js
+  // Ailerons
   aileronsSection: "Klappen-Schnitt",
   thicknessTop: "Restdicke oben",
   positionFromRear: "Position von hinten",
   frontAngle: "Front V-Winkel",
   rearAngle: "Rear V-Winkel",
   delete: "Löschen",
-  addAileron: "Neue Klappe"
+  addAileron: "Neue Klappe",
+
+  //Front rear Trim
+  trimSection: "Trim-Profil",
+  trimEnabled: "Trim aktivieren",
+  trimLE: "Nasenleiste (LE)",
+  trimTE: "Endleiste (TE)",
+
+  //Gcode
+  gcodeSection: "GCode",
+  save: "Speichern"
 };

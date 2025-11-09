@@ -64,13 +64,19 @@ window.langEN = {
   delete: "Delete",
   addHole: "Add hole",
   
-  // lang.en.js
   aileronsSection: "Aileron Cut",
   thicknessTop: "Top thickness",
   positionFromRear: "Position from rear",
   frontAngle: "Front V-angle",
   rearAngle: "Rear V-angle",
   delete: "Delete",
-  addAileron: "Add aileron"
+  addAileron: "Add aileron",
 
+  trimSection: "Trim Airfoil",
+  trimEnabled: "Enable Trim",
+  trimLE: "Leading Edge (LE)",
+  trimTE: "Trailing Edge (TE)",
+
+  gcodeSection: "GCode",
+  save: "Save"
 };
