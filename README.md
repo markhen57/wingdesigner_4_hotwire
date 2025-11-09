@@ -2,6 +2,8 @@
 
 **WingDesigner 4 Hotwire** is a web-based tool for designing and planning foam or Styrofoam wing components for FPV wing models, optimized for hotwire cutting. It supports full export/import of build and machine parameters.
 
+Use it: https://hotwireairfoil.coolpixx.de
+
 ## 🎯 Key Features
 
 - Input wing profiles (e.g., `.dat` files) for inner and outer sections.
