@@ -1,23 +1,55 @@
-const HolesSection = ({ holes, setHoles, isActive, onToggle }) => {
+// js/components/HolesSection.jsx
+window.HolesSection = function HolesSection(props) {
+  // Babel-sichere Übersetzung
+  var t = function(key) {
+    if (window.i18n && typeof window.i18n._ === 'function') {
+      return window.i18n._(key);
+    }
+    return key;
+  };
+
+  var holes = props.holes;
+  var setHoles = props.setHoles;
+  var isActive = props.isActive;
+  var onToggle = props.onToggle;
+
+    // WICHTIG: Reagiere auf Sprachwechsel!
+  var langVersion = props.langVersion || 0;
+  var forceUpdate = React.useReducer(function(x) { return x + 1; }, 0)[1];
+
+  React.useEffect(function() {
+    var handler = function() {
+      forceUpdate(); // zwingt komplettes Re-Render
+    };
+    window.addEventListener('i18n-change', handler);
+    return function() {
+      window.removeEventListener('i18n-change', handler);
+    };
+  }, []);
+
+  // Key mit Sprache → zwingt React, alles neu zu bauen
+  var uniqueKey = 'holes-' + langVersion + '-' + holes.length;
+
+  
   return (
-    <ProfileBox title="Holes" color="#000" isActive={isActive} onToggle={onToggle}>
+    <ProfileBox title={t('holesSection')} color="#000" isActive={isActive} onToggle={onToggle}>
       {holes.map((h, i) => (
         <div key={i} style={{ border: '1px solid #ccc', marginBottom: 6, padding: 4 }}>
-          <label>Durchmesser (mm)
+          <label>{t('diameter')} (mm)
             <input type="number" value={h.diameter} onChange={e => {
               const newHoles = [...holes];
               newHoles[i].diameter = Number(e.target.value);
               setHoles(newHoles);
             }} />
           </label>
-          <label>Punkteanzahl
+          <label>{t('pointsCount')}
             <input type="number" min="3" value={h.nPoints} onChange={e => {
               const newHoles = [...holes];
               newHoles[i].nPoints = Number(e.target.value);
               setHoles(newHoles);
             }} />
           </label>
-          <label>Horizontal (%)
+          <label>{t('horizontal')} (%)
             <input type="range" min="0" max="1" step="0.01" value={h.xPercent} onChange={e => {
               const newHoles = [...holes];
               newHoles[i].xPercent = parseFloat(e.target.value);
@@ -29,7 +61,7 @@ const HolesSection = ({ holes, setHoles, isActive, onToggle }) => {
               setHoles(newHoles);
             }} />
           </label>
-          <label>Vertikal (%)
+          <label>{t('vertical')} (%)
             <input type="range" min="0" max="1" step="0.01" value={h.yPercent} onChange={e => {
               const newHoles = [...holes];
               newHoles[i].yPercent = parseFloat(e.target.value);
@@ -41,11 +73,13 @@ const HolesSection = ({ holes, setHoles, isActive, onToggle }) => {
               setHoles(newHoles);
             }} />
           </label>
-          <button onClick={() => setHoles(holes.filter((_, idx) => idx !== i))}>Löschen</button>
+          <button onClick={() => setHoles(holes.filter((_, idx) => idx !== i))}>
+            {t('delete')}
+          </button>
         </div>
       ))}
       <button onClick={() => setHoles([...holes, { diameter: 5, xPercent: 0.5, yPercent: 0.5, nPoints: 30 }])}>
-        Neues Loch
+        {t('addHole')}
       </button>
     </ProfileBox>
   );

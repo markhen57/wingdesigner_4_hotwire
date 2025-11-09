@@ -36,6 +36,7 @@ function HotwireWing3D() {
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugPoints, setDebugPoints] = useState({ inner: [], outer: [] });
   const [exportImportIsOpen, setExportImportIsOpen] = React.useState(false);
+  const [langVersion, setLangVersion] = React.useState(0);
 
     // === Schritte fuer Maschinenein und Ausfahrt sowie spiegeln ===
   const [hotwirePoint, setHotwirePoint] = useState(false);
@@ -202,6 +203,13 @@ function HotwireWing3D() {
       scene.clear();
       window.removeEventListener("resize", handleResize);
     };
+  }, []);
+
+  //Sprachumschaltung
+  useEffect(() => {
+    const handler = () => setLangVersion(v => v + 1);
+    window.addEventListener('i18n-change', handler);
+    return () => window.removeEventListener('i18n-change', handler);
   }, []);
 
   useEffect(() => {
@@ -857,7 +865,7 @@ useEffect(() => {
           exportImportIsOpen={exportImportIsOpen} toggleExportImport={() => setExportImportIsOpen(!exportImportIsOpen)}
           gcodeOpen={gcodeOpen} setGcodeOpen={setGcodeOpen} gcode={gcode}                        // <--- GCode jetzt über State
           debugOpen={debugOpen} setDebugOpen={setDebugOpen} debugPoints={debugPoints}
-
+          langVersion={langVersion} setLangVersion={setLangVersion}
             // === Maschinendaten Props ===
           isActive={machineActive} onToggle={() => setMachineActive(!machineActive)}
           xName={xName} setXName={setXName}
