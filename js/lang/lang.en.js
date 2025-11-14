@@ -78,5 +78,9 @@ window.langEN = {
   trimTE: "Trailing Edge (TE)",
 
   gcodeSection: "GCode",
+  start: "Simulation Start",
+  stop: "Simulation Stop",
+  speedMultiplier: "Speed Multiplier Simulation",
   save: "Save"
+  
 };

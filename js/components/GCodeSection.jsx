@@ -13,6 +13,12 @@ window.GCodeSection = function GCodeSection(props) {
   var isOpen = props.isOpen;
   var onToggle = props.onToggle;
   var fileName = props.fileName || "program.nc";
+  var simulateCut = props.simulateCut;
+  var setSimulateCut = props.setSimulateCut;
+  var speedMultiplier = props.speedMultiplier;
+  var setSpeedMultiplier = props.setSpeedMultiplier;
+  var activeTab = props.activeTab;
+  var setActiveTab = props.setActiveTab;
 
   // WICHTIG: Reagiere auf Sprachwechsel!
   var langVersion = props.langVersion || 0;
@@ -31,6 +37,8 @@ window.GCodeSection = function GCodeSection(props) {
   // Key mit Sprache → zwingt React, alles neu zu bauen
   var uniqueKey = 'gcode-' + langVersion;
 
+  const [running, setRunning] = React.useState(false);
+
   var saveFile = function() {
     var blob = new Blob([gcode], { type: "text/plain;charset=utf-8" });
     var link = document.createElement("a");
@@ -40,8 +48,30 @@ window.GCodeSection = function GCodeSection(props) {
     URL.revokeObjectURL(link.href);
   };
 
+  //simulation
+  const toggleRunning = () => {
+    setRunning(r => !r);
+    if (setSimulateCut) {
+      setSimulateCut(prev => !prev); // Simulation starten/stoppen
+    }
+  };
+
   return <ProfileBox title={title} color="#000" isActive={isOpen} onToggle={onToggle} key={uniqueKey}>
     <button onClick={saveFile}>{t('save')}</button>
-    <div style={{display:'flex', gap:16, fontSize:12, fontFamily:'monospace', whiteSpace:'pre', overflow:'auto', maxHeight:200}}><div>{gcode}</div></div>
-  </ProfileBox>;
+
+    {(activeTab === 'foam' || activeTab === 'machine') && (
+      <div>
+        <button onClick={toggleRunning}>{running ? t('stop') || "Stop" : t('start') || "Start"}</button>
+        <div className="profile-content">
+          <label>{t('speedMultiplier')} (-) {speedMultiplier.toFixed(2)}x</label>
+          <input type="range" min="0.01" max="5" step="0.01" value={speedMultiplier} onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))} />
+        </div>
+      </div>
+    )}
+
+    <div style={{display:'flex', gap:16, fontSize:12, fontFamily:'monospace', whiteSpace:'pre', overflow:'auto', maxHeight:200}}>
+      <div>{gcode}</div>
+    </div>
+</ProfileBox>;
+
 };

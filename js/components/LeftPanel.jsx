@@ -117,6 +117,10 @@ window.LeftPanel = function LeftPanel(props) {
   var setKerfSide = props.setKerfSide;
   var exportImportIsOpen = props.exportImportIsOpen;
   var toggleExportImport = props.toggleExportImport;
+  var simulateCut = props.simulateCut;
+  var setSimulateCut = props.setSimulateCut;
+  var speedMultiplier = props.speedMultiplier;
+  var setSpeedMultiplier = props.setSpeedMultiplier;
 
   return (
     <div style={{ flex: '0 0 500px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -299,6 +303,9 @@ window.LeftPanel = function LeftPanel(props) {
         isOpen={gcodeOpen}
         onToggle={function() { setGcodeOpen(!gcodeOpen); }}
         fileName="wing_program.nc"
+        simulateCut={simulateCut} setSimulateCut={setSimulateCut}
+        speedMultiplier={speedMultiplier} setSpeedMultiplier={setSpeedMultiplier}
+        activeTab={activeTab} setActiveTab={setActiveTab}
       />
 
       <ExportImportSection

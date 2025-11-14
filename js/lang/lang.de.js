@@ -49,8 +49,11 @@ window.langDE = {
   width: "Breite",
   height: "Höhe",
 
-  // --- GCode & Sonstiges ---
+  // --- GCode & Simulation & Sonstiges ---
   gcode: "Generierter GCode",
+  start: "Simulation Start",
+  stop: "Simulation Stop",
+  speedMultiplier: "Speed-Simulation",
 
   // --- Fallback für Select-Optionen ---
   none: "Keine",

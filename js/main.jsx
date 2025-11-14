@@ -82,6 +82,11 @@ function HotwireWing3D() {
   const [cameraPos, setCameraPos] = useState({x:0,y:0,z:0});
   const [cameraTarget, setCameraTarget] = useState({x:0,y:0,z:0});
 
+  //Simulation
+  const [simulateCut, setSimulateCut] = useState(false);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  
+
   useEffect(() => {
     fetch('airfoil/clarky.dat')
       .then(res => res.text())
@@ -533,18 +538,34 @@ lines.forEach(line => {
       window.generateG93Footer(axisNames)
     ].join('\n');
 
-    
     if (activeTab === 'foam' || activeTab === 'machine') {
       //G-Code analysieren und ebenfalls darstellen
       const { inner: gcodeInnerPoints, outer: gcodeOuterPoints } = window.parseAndExtractGcodePoints(generatedGcode, hotwireLength);
+
+      //const { inner: gcodeInnerPoints, outer: gcodeOuterPoints } = window.parseAndExtractGcodePoints(generatedGcode, hotwireLength);
       const gcodeInnerLine = window.createLine(gcodeInnerPoints, (-hotwireLength / 2), 0x000000, true, 0.7);
       const gcodeOuterLine = window.createLine(gcodeOuterPoints, (hotwireLength / 2), 0x000000, true, 0.7);
       scene.add(gcodeInnerLine);
       scene.add(gcodeOuterLine);
       scene.lines.gcodeInnerLine = gcodeInnerLine;
       scene.lines.gcodeOuterLine = gcodeOuterLine;
-    }
     
+      // Stoppe alte Simulation immer
+      window.stopHotwireSimulation(scene);
+
+      // Nur neu starten, wenn simulateCut aktiv ist
+      if (simulateCut) {
+        window.startHotwireSimulation(scene, gcodeInnerPoints, gcodeOuterPoints, hotwireLength, speedMultiplier);
+          console.log("=== Hotwire Simulation Speed Log ===");
+          console.log("speedMultiplier:", speedMultiplier);
+          console.log("====================================");
+      } 
+
+      // Cleanup beim Unmount oder Effekt-Abbruch
+      return () => window.stopHotwireSimulation(scene)
+  }
+
+
     setGcode(generatedGcode);
 
   }, [
@@ -586,8 +607,29 @@ lines.forEach(line => {
   zName,
   aName,
   wireDiameter,
-  kerfSide          
+  kerfSide,
+  simulateCut, 
+  speedMultiplier 
 ]);
+
+
+  //Simulation
+/*useEffect(() => {
+  if (!sceneRef.current || gcodeInnerPoints.length === 0 || gcodeOuterPoints.length === 0) return;
+  const scene = sceneRef.current;
+
+  // Stoppe alte Simulation immer
+  window.stopHotwireSimulation(scene);
+
+  // Nur neu starten, wenn simulateCut aktiv ist
+  if (simulateCut) {
+    window.startHotwireSimulation(scene, gcodeInnerPoints, gcodeOuterPoints, hotwireLength, effectiveSpeed);
+  } 
+
+  // Cleanup beim Unmount oder Effekt-Abbruch
+  return () => window.stopHotwireSimulation(scene);
+}, [simulateCut, speedMultiplier, effectiveSpeed, gcodeInnerPoints, gcodeOuterPoints, hotwireLength, wireDiameter, kerfSide]);
+*/
 
 //Surface Aktivieren/Deaktivieren
 useEffect(() => {
@@ -930,6 +972,9 @@ useEffect(() => {
           hotWirePower={hotWirePower} setHotWirePower={setHotWirePower}
           wireDiameter={wireDiameter} setWireDiameter={setWireDiameter}
           kerfSide={kerfSide} setKerfSide={setKerfSide}
+          //simulation
+          simulateCut={simulateCut} setSimulateCut={setSimulateCut}
+          speedMultiplier={speedMultiplier}  setSpeedMultiplier={setSpeedMultiplier}
         />
         {/* Rechte Canvas-Box mit Tabs */}
         <div style={{flex: 1, minHeight: 0, position: 'relative'}}>
