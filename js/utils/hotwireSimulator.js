@@ -1,32 +1,41 @@
-// globales Sim-Objekt sicherstellen
+// globales Sim-Objekt
 window.hotwireSim = window.hotwireSim || {
   running: false,
-  cones: [],
+  index: 0,
+  line: null,
   surface: null,
+  cones: [],
   frame: null,
+  lastTime: null
 };
 
 window.startHotwireSimulation = function(scene, innerPts, outerPts, hotwireLength, speedMultiplier = 1) {
   if (!scene || !innerPts?.length || !outerPts?.length) return;
   window.stopHotwireSimulation(scene);
   window.hotwireSim.running = true;
-  
-  const total = Math.min(innerPts.length, outerPts.length);
+  window.hotwireSim.index = 0;
+  window.hotwireSim.lastTime = performance.now();
 
-  // --- EINZIGE ORANGE LINE ---
+  const total = Math.min(innerPts.length, outerPts.length);
+  const trailLength = 50;
+
+  // --- 1. EINZIGE ORANGE LINIE ---
   const linePositions = new Float32Array(6);
   const lineColors = new Float32Array(6);
   const lineGeometry = new THREE.BufferGeometry();
   lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
   lineGeometry.setAttribute('color', new THREE.BufferAttribute(lineColors, 3));
-  const lineMaterial = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 1.0 });
+  const lineMaterial = new THREE.LineBasicMaterial({ 
+    vertexColors: true, 
+    transparent: false, 
+    opacity: 1.0,
+    linewidth: 3 
+  });
   const lineMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
   scene.add(lineMesh);
-
   window.hotwireSim.line = { mesh: lineMesh, positions: linePositions, colors: lineColors };
 
-  // --- Surface ---
-  const trailLength = 50;
+  // --- 2. SURFACE: zwischen ORANGE Linie und letzter Position ---
   const maxLines = trailLength;
   const maxSegments = maxLines - 1;
   const surfacePositions = new Float32Array(maxLines * 6);
@@ -49,9 +58,14 @@ window.startHotwireSimulation = function(scene, innerPts, outerPts, hotwireLengt
   });
   const surfaceMesh = new THREE.Mesh(surfaceGeometry, surfaceMaterial);
   scene.add(surfaceMesh);
-  window.hotwireSim.surface = { mesh: surfaceMesh, positions: surfacePositions, numLines: 0 };
+  window.hotwireSim.surface = { 
+    mesh: surfaceMesh, 
+    positions: surfacePositions, 
+    numLines: 0,
+    head: 0
+  };
 
-  // --- Kegel ---
+  // --- 3. Kegel ---
   const coneHeight = 5;
   const coneRadius = 3;
   const coneGeometry = new THREE.ConeGeometry(coneRadius, coneHeight, 16);
@@ -65,19 +79,24 @@ window.startHotwireSimulation = function(scene, innerPts, outerPts, hotwireLengt
   scene.add(coneRight);
   window.hotwireSim.cones = [coneLeft, coneRight];
 
-  // --- LICHT ---
+  // --- 4. Licht ---
   if (!scene.getObjectByName('hotwireLight')) {
-    const light = new THREE.PointLight(0xffffff, 2.0, 1000);
+    const light = new THREE.PointLight(0xffffff, 5.0, 1000);
     light.position.set(0, 0, 50);
     light.name = 'hotwireLight';
     scene.add(light);
   }
 
-  let index = 0;
   function animate() {
     if (!window.hotwireSim.running) return;
 
-    const i = index % total;
+    const now = performance.now();
+    const delta = now - window.hotwireSim.lastTime;
+    window.hotwireSim.lastTime = now;
+
+    // speedMultiplier mit deltaTime → flüssig auch bei Sprüngen
+    window.hotwireSim.index += speedMultiplier * 60 * (delta / 1000);
+    const i = Math.floor(window.hotwireSim.index) % total;
     const pL = innerPts[i];
     const pR = outerPts[i];
     if (!pL || !pR) return;
@@ -85,21 +104,22 @@ window.startHotwireSimulation = function(scene, innerPts, outerPts, hotwireLengt
     const v1 = new THREE.Vector3(pL.x, -hotwireLength / 2, pL.y);
     const v2 = new THREE.Vector3(pR.x, hotwireLength / 2, pR.y);
 
-    // --- Linie ORANGE ---
+    // --- ORANGE LINIE (einzige sichtbare Linie) ---
     const line = window.hotwireSim.line;
     line.positions[0] = v1.x; line.positions[1] = v1.y; line.positions[2] = v1.z;
     line.positions[3] = v2.x; line.positions[4] = v2.y; line.positions[5] = v2.z;
-    for (let idx = 0; idx < 6; idx += 3) {
-      line.colors[idx + 0] = 1.0;
-      line.colors[idx + 1] = 0.5;
-      line.colors[idx + 2] = 0.0;
+    for (let c = 0; c < 6; c += 3) {
+      line.colors[c] = 1.0; line.colors[c + 1] = 0.5; line.colors[c + 2] = 0.0;
     }
     line.mesh.geometry.attributes.position.needsUpdate = true;
     line.mesh.geometry.attributes.color.needsUpdate = true;
 
-    // --- Surface ---
+    // --- SURFACE: zwischen ORANGE und letzter Position ---
     const s = window.hotwireSim.surface;
     const sPos = s.positions;
+    const head = s.head;
+
+    // Positionen nach hinten schieben
     for (let j = sPos.length - 6; j >= 6; j -= 6) {
       sPos[j]     = sPos[j - 6];
       sPos[j + 1] = sPos[j - 5];
@@ -108,10 +128,14 @@ window.startHotwireSimulation = function(scene, innerPts, outerPts, hotwireLengt
       sPos[j + 4] = sPos[j - 2];
       sPos[j + 5] = sPos[j - 1];
     }
+
+    // Neue Linie vorne
     sPos[0] = v1.x; sPos[1] = v1.y; sPos[2] = v1.z;
     sPos[3] = v2.x; sPos[4] = v2.y; sPos[5] = v2.z;
 
-    if (s.numLines < 50) s.numLines++;
+    // Ringpuffer + DrawRange
+    s.head = (head + 1) % trailLength;
+    if (s.numLines < trailLength) s.numLines++;
     s.mesh.geometry.setDrawRange(0, (s.numLines - 1) * 6);
     s.mesh.geometry.attributes.position.needsUpdate = true;
 
@@ -123,13 +147,13 @@ window.startHotwireSimulation = function(scene, innerPts, outerPts, hotwireLengt
     coneLeft.lookAt(v1.clone().add(leftDir));
     coneRight.lookAt(v2.clone().add(rightDir));
 
-    index++;
     window.hotwireSim.frame = requestAnimationFrame(animate);
   }
+
   animate();
 };
 
-// --- STOP-FUNKTION ---
+// --- STOP ---
 window.stopHotwireSimulation = function(scene) {
   if (!window.hotwireSim) return;
   window.hotwireSim.running = false;
@@ -153,8 +177,13 @@ window.stopHotwireSimulation = function(scene) {
     });
   }
 
-  window.hotwireSim.line = null;
-  window.hotwireSim.cones = [];
-  window.hotwireSim.surface = null;
-  window.hotwireSim.frame = null;
+  window.hotwireSim = {
+    running: false,
+    index: 0,
+    line: null,
+    surface: null,
+    cones: [],
+    frame: null,
+    lastTime: null
+  };
 };
