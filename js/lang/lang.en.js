@@ -4,8 +4,8 @@ window.langEN = {
   camera: "Camera",
   target: "Target",
 
-  innerDAT: "Inner DAT",
-  outerDAT: "Outer DAT",
+  innerDAT: "Root DAT",
+  outerDAT: "Tip DAT",
 
   span: "Wingspan",
   pointsPerProfile: "Points per profile",
@@ -16,14 +16,15 @@ window.langEN = {
   mirrorGapText: "Gap front, mirror surfaces (if active), bottom (mm)",
   machineEntryExit: "Machine entry/exit",
 
-  innerProfile: "Inner profile",
-  outerProfile: "Outer profile",
+  innerProfile: "Root Airfoil",
+  outerProfile: "Tip Airfoil",
   color: "Color",
-  length: "Length",
-  thickness: "Thickness",
-  rotation: "Rotation",
-  vertical: "Vertical",
-  chord: "Chord",
+  length: "Chord",
+  thickness: "Scale",
+  rotationIn: "Root Angle",
+  rotationOut: "Washout(-)",
+  vertical: "Dihedral",
+  chord: "LE Sweep",
 
   machineData: "Machine data",
   left: "left",
@@ -41,7 +42,8 @@ window.langEN = {
   foamBlock: "Foam block",
   showFoam: "Show foam",
   width: "Width",
-  height: "Height",
+  height: "Y/A Height",
+  lengthFoam: "X/Z Depth",
 
   gcode: "Generated GCode",
 
@@ -50,7 +52,7 @@ window.langEN = {
   outer: "Outer",
 
   exportImport: "Export / Import",
-  exportAll: "Export fullure full project",
+  exportAll: "Export full project",
   exportMachineFoam: "Export machine + foam",
   exportProfile: "Export profile + wings",
   importJSON: "Import JSON",
