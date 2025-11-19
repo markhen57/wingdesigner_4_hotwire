@@ -298,9 +298,9 @@ window.LeftPanel = function LeftPanel(props) {
             <label>
               <input type="checkbox" checked={foamActive} onChange={(e) => setFoamActive(e.target.checked)} />{t('showFoam')}
             </label>
-            <label>{t('length')} (mm): <input type="number" value={foamLength} onChange={function(e) { setFoamLength(Number(e.target.value)); }} /></label>
-            <label>{t('width')} (mm): <input type="number" value={foamWidth} onChange={function(e) { setFoamWidth(Number(e.target.value)); }} /></label>
-            <label>{t('height')} (mm): <input type="number" value={foamHeight} onChange={function(e) { setFoamHeight(Number(e.target.value)); }} /></label>
+            <label>{t('length_foam')} (mm): <input type="number" value={foamLength} onChange={function(e) { setFoamLength(Number(e.target.value)); }} /></label>
+            <label>{t('width_foam')} (mm): <input type="number" value={foamWidth} onChange={function(e) { setFoamWidth(Number(e.target.value)); }} /></label>
+            <label>{t('height_foam')} (mm): <input type="number" value={foamHeight} onChange={function(e) { setFoamHeight(Number(e.target.value)); }} /></label>
           </div>
         )}
       </div>
@@ -356,6 +356,7 @@ window.LeftPanel = function LeftPanel(props) {
         holes={holes} setHoles={setHoles}
         ailerons={ailerons} setAilerons={setAilerons}
         isOpen={exportImportIsOpen} onToggle={toggleExportImport}
+        mirrorWing={mirrorWing} setMirrorWing={setMirrorWing}
       />
 
       <DebugSection debugPoints={debugPoints} innerName={innerName} outerName={outerName} isOpen={debugOpen} onToggle={function() { 

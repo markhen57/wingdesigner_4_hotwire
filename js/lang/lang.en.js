@@ -41,8 +41,9 @@ window.langEN = {
 
   foamBlock: "Foam block",
   showFoam: "Show foam",
-  width: "Width",
-  height: "Height",
+  width_foam: "Width",
+  height_foam: "Y/A Height",
+  length_foam: "X/Z Depth",
 
   gcode: "Generated GCode",
 
@@ -51,7 +52,7 @@ window.langEN = {
   outer: "Outer",
 
   exportImport: "Export / Import",
-  exportAll: "Export fullure full project",
+  exportAll: "Export full project",
   exportMachineFoam: "Export machine + foam",
   exportProfile: "Export profile + wings",
   importJSON: "Import JSON",

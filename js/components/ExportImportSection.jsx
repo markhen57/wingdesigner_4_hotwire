@@ -83,6 +83,8 @@ window.ExportImportSection = function ExportImportSection(props) {
   var setAilerons = props.setAilerons;
   var isOpen = props.isOpen;
   var onToggle = props.onToggle;
+  var mirrorWing = props.mirrorWing;
+  var setMirrorWing = props.setMirrorWing;
 
   // JSON Download Funktion
   var downloadJSON = function(data, filename) {
@@ -99,7 +101,7 @@ window.ExportImportSection = function ExportImportSection(props) {
   var exportAll = function() {
     var data = {
       machine: { xName: xName, yName: yName, zName: zName, aName: aName, axisXmm: axisXmm, axisYmm: axisYmm, hotwireLength: hotwireLength, speed: speed, fMax: fMax, fMin: fMin, hotWirePower: hotWirePower, wireDiameter: wireDiameter, kerfSide: kerfSide },
-      wing: { innerName: innerName, innerColor: innerColor, innerScale: innerScale, thicknessScaleInner: thicknessScaleInner, rotationInner: rotationInner, outerName: outerName, outerColor: outerColor, outerScale: outerScale, thicknessScaleOuter: thicknessScaleOuter, rotationOuter: rotationOuter, outerVerticalOffset: outerVerticalOffset, outerChordOffset: outerChordOffset, span: span, trimEnabled: trimEnabled, trimLEmm: trimLEmm, trimTEmm: trimTEmm, holes: holes, ailerons: ailerons },
+      wing: { innerName: innerName, innerColor: innerColor, innerScale: innerScale, thicknessScaleInner: thicknessScaleInner, rotationInner: rotationInner, outerName: outerName, outerColor: outerColor, outerScale: outerScale, thicknessScaleOuter: thicknessScaleOuter, rotationOuter: rotationOuter, outerVerticalOffset: outerVerticalOffset, outerChordOffset: outerChordOffset, span: span, trimEnabled: trimEnabled, trimLEmm: trimLEmm, trimTEmm: trimTEmm, holes: holes, ailerons: ailerons, mirrorWing: mirrorWing },
       profil: { innerDAT: innerDAT, outerDAT: outerDAT },
       foam: { foamLength: foamLength, foamWidth: foamWidth, foamHeight: foamHeight }
     };
@@ -120,7 +122,7 @@ window.ExportImportSection = function ExportImportSection(props) {
               outerName: outerName, outerColor: outerColor, outerScale: outerScale, thicknessScaleOuter: thicknessScaleOuter, rotationOuter: rotationOuter,
               outerVerticalOffset: outerVerticalOffset, outerChordOffset: outerChordOffset,
               span: span, trimEnabled: trimEnabled, trimLEmm: trimLEmm, trimTEmm: trimTEmm,
-              holes: holes, ailerons: ailerons },
+              holes: holes, ailerons: ailerons, mirrorWing: mirrorWing },
       profil: { innerDAT: innerDAT, outerDAT: outerDAT }
     };
     downloadJSON(data, 'profile_data.json');
@@ -169,6 +171,7 @@ window.ExportImportSection = function ExportImportSection(props) {
           setTrimTEmm(data.wing.trimTEmm || 0);
           setHoles(data.wing.holes || []);
           setAilerons(data.wing.ailerons || []);
+          setMirrorWing(data.wing.mirrorWing || false)
         }
         if (data.profil) {
           setInnerDAT(data.profil.innerDAT || null);

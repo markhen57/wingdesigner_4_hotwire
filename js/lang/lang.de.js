@@ -47,8 +47,9 @@ window.langDE = {
 
   // --- Foam Block ---
   foamBlock: "Foam Block",
-  width: "Breite",
-  height: "Höhe",
+  width_foam: "Breite",
+  height_foam: "Y/A Height",
+  length_foam: "X/Z Länge",
   showFoam: "Schaum anzeigen",
 
   // --- GCode & Simulation & Sonstiges ---
