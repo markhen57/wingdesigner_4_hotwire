@@ -67,6 +67,7 @@ function HotwireWing3D() {
   const [foamLength, setFoamLength] = useState(300); // mm
   const [foamWidth, setFoamWidth] = useState(600);   // mm
   const [foamHeight, setFoamHeight] = useState(100); // mm
+  const [foamOffset, setFoamOffset] = useState(0);
 
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
@@ -439,9 +440,9 @@ lines.forEach(line => {
       outerFinal = window.addSafeTravelPoints(outerFinal, { front: mirrorGap*2, back: mirrorGap, y: mirrorGap });
     }
  
-    let [innerProjected, outerProjected] = window.projectProfiles(innerFinal, outerFinal, span, foamWidth);
+    let [innerProjected, outerProjected] = window.projectProfiles(innerFinal, outerFinal, span, foamWidth, foamOffset);
 
-    let [innerProjectedMaschine, outerProjectedMaschine] = window.projectProfiles(innerProjected, outerProjected, foamWidth, hotwireLength);
+    let [innerProjectedMaschine, outerProjectedMaschine] = window.projectProfiles(innerProjected, outerProjected, foamWidth, hotwireLength, foamOffset);
     
     //alle punke mit dem untersten punkt offsetten damit dieser auf 0 liegt
     [innerFinal, outerFinal, innerProjected, outerProjected, innerProjectedMaschine, outerProjectedMaschine] =
@@ -466,14 +467,14 @@ lines.forEach(line => {
     window.removeLine(scene, 'gcodeInnerLine');
     window.removeLine(scene, 'gcodeOuterLine');
 
-    const innerLine = window.createLine(innerFinal, -span / 2, parseInt(innerColor.slice(1), 16));
-    const outerLine = window.createLine(outerFinal, span / 2, parseInt(outerColor.slice(1), 16));
+    const innerLine = window.createLine(innerFinal, -span / 2 + foamOffset, parseInt(innerColor.slice(1), 16));
+    const outerLine = window.createLine(outerFinal, span / 2 + foamOffset, parseInt(outerColor.slice(1), 16));
 
     const centerInnerLine = window.createLine(innerFinal, 0, parseInt(centerInnerColor.slice(1), 16));
     const centerOuterLine = window.createLine(outerFinal, 0, parseInt(centerOuterColor.slice(1), 16));
 
-    const innerProjectedLine = window.createLine(innerProjected, -foamWidth/2, parseInt(innerColor.slice(1), 16), true, 1);
-    const outerProjectedLine = window.createLine(outerProjected, foamWidth/2, parseInt(outerColor.slice(1), 16), true, 1);
+    const innerProjectedLine = window.createLine(innerProjected, -foamWidth/2 + foamOffset, parseInt(innerColor.slice(1), 16), true, 1);
+    const outerProjectedLine = window.createLine(outerProjected, foamWidth/2 + foamOffset, parseInt(outerColor.slice(1), 16), true, 1);
 
     const innerProjectedMaschineLine = window.createLine(innerProjectedMaschine, -hotwireLength/2, parseInt(innerColor.slice(1), 16), true, 1);
     const outerProjectedMaschineLine = window.createLine(outerProjectedMaschine, hotwireLength/2, parseInt(outerColor.slice(1), 16), true, 1);
@@ -518,6 +519,7 @@ lines.forEach(line => {
         foamLength: foamLength,
         foamWidth: foamWidth,
         foamHeight: foamHeight,
+        foamOffset: foamOffset,
         wireDiameter: wireDiameter,
         kerfSide: kerfSide,
         hotwireLength: hotwireLength,
@@ -592,6 +594,7 @@ lines.forEach(line => {
   centerOuterColor,
   foamActive,
   foamWidth,
+  foamOffset,
   hotwireLength,
   activeTab,
   surfaceVisible,
@@ -776,7 +779,7 @@ useEffect(() => {
     // Positionierung: X verschoben um foamLength/halbe Länge
     foamBlock.position.set(
       foamLength/2,
-      0,
+      foamOffset,
       foamHeight/2
     );
 
@@ -799,6 +802,7 @@ useEffect(() => {
     foamLength,
     foamWidth,
     foamHeight,
+    foamOffset,
   ]);
 
 //Maschine
@@ -961,6 +965,7 @@ useEffect(() => {
           foamLength={foamLength} setFoamLength={setFoamLength}
           foamWidth={foamWidth} setFoamWidth={setFoamWidth}
           foamHeight={foamHeight} setFoamHeight={setFoamHeight}
+          foamOffset={foamOffset} setFoamOffset={setFoamOffset}
           // === Surface Props ===
           surfaceVisible={surfaceVisible} setSurfaceVisible={setSurfaceVisible}
           //spiegeln und Ausfahrpunkte

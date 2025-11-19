@@ -97,6 +97,8 @@ window.LeftPanel = function LeftPanel(props) {
   var setFoamWidth = props.setFoamWidth;
   var foamHeight = props.foamHeight;
   var setFoamHeight = props.setFoamHeight;
+  var foamOffset = props.foamOffset;
+  var setFoamOffset = props.setFoamOffset;
   var surfaceVisible = props.surfaceVisible;
   var setSurfaceVisible = props.setSurfaceVisible;
   var hotwirePoint = props.hotwirePoint;
@@ -301,6 +303,7 @@ window.LeftPanel = function LeftPanel(props) {
             <label>{t('length_foam')} (mm): <input type="number" value={foamLength} onChange={function(e) { setFoamLength(Number(e.target.value)); }} /></label>
             <label>{t('width_foam')} (mm): <input type="number" value={foamWidth} onChange={function(e) { setFoamWidth(Number(e.target.value)); }} /></label>
             <label>{t('height_foam')} (mm): <input type="number" value={foamHeight} onChange={function(e) { setFoamHeight(Number(e.target.value)); }} /></label>
+            <label>{t('offset_foam')} (mm): <input type="number" value={foamOffset} onChange={function(e) { setFoamOffset(Number(e.target.value)); }} /></label>
           </div>
         )}
       </div>
@@ -353,6 +356,7 @@ window.LeftPanel = function LeftPanel(props) {
         foamLength={foamLength} setFoamLength={setFoamLength}
         foamWidth={foamWidth} setFoamWidth={setFoamWidth}
         foamHeight={foamHeight} setFoamHeight={setFoamHeight}
+        foamOffset={foamOffset} setFoamOffset={setFoamOffset}
         holes={holes} setHoles={setHoles}
         ailerons={ailerons} setAilerons={setAilerons}
         isOpen={exportImportIsOpen} onToggle={toggleExportImport}
