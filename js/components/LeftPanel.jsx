@@ -213,8 +213,8 @@ window.LeftPanel = function LeftPanel(props) {
           <input type="range" min="0.5" max="1.5" step="0.01" value={thicknessScaleInner} onChange={function(e) { setThicknessScaleInner(Number(e.target.value)); }} />
         </label>
         <label>{t('rotation')} (°)
-          <input type="number" step="0.01" min="-25" max="25" value={Math.round(rotationInner * 180 / Math.PI)} onChange={function(e) { setRotationInner(Number(e.target.value) * Math.PI / 180); }} />
-          <input type="range" min="-25" max="25" value={Math.round(rotationInner * 180 / Math.PI)} onChange={function(e) { setRotationInner(Number(e.target.value) * Math.PI / 180); }} />
+          <input type="number" step="0.01" min="-25" max="25" value={rotationInner * 180 / Math.PI} onChange={function(e) { setRotationInner(Number(e.target.value) * Math.PI / 180); }} />
+          <input type="range" min="-25" max="25" value={rotationInner * 180 / Math.PI} onChange={function(e) { setRotationInner(Number(e.target.value) * Math.PI / 180); }} />
         </label>
       </ProfileBox>
 
@@ -233,8 +233,8 @@ window.LeftPanel = function LeftPanel(props) {
           <input type="range" min="0.5" max="1.5" step="0.01" value={thicknessScaleOuter} onChange={function(e) { setThicknessScaleOuter(Number(e.target.value)); }} />
         </label>
         <label>{t('rotation_outer')} (°)
-          <input type="number" step="0.01" min="-25" max="25" value={Math.round(rotationOuter * 180 / Math.PI)} onChange={function(e) { setRotationOuter(Number(e.target.value) * Math.PI / 180); }} />
-          <input type="range" min="-25" max="25" value={Math.round(rotationOuter * 180 / Math.PI)} onChange={function(e) { setRotationOuter(Number(e.target.value) * Math.PI / 180); }} />
+          <input type="number" step="0.01" min="-25" max="25" value={rotationOuter * 180 / Math.PI} onChange={function(e) { setRotationOuter(Number(e.target.value) * Math.PI / 180); }} />
+          <input type="range" min="-25" max="25" value={rotationOuter * 180 / Math.PI} onChange={function(e) { setRotationOuter(Number(e.target.value) * Math.PI / 180); }} />
         </label>
         <label>{t('vertical')} (mm)
           <input type="number" value={outerVerticalOffset} onChange={function(e) { setOuterVerticalOffset(Number(e.target.value)); }} />
@@ -271,8 +271,8 @@ window.LeftPanel = function LeftPanel(props) {
           <div className="profile-content">
             <label>X {t('left')}: <input maxLength={1} value={xName} onChange={function(e) { setXName(letterOnly(e.target.value)); }} /></label>
             <label>Y {t('left')}: <input maxLength={1} value={yName} onChange={function(e) { setYName(letterOnly(e.target.value)); }} /></label>
-            <label>X {t('right')}: <input maxLength={1} value={zName} onChange={function(e) { setZName(letterOnly(e.target.value)); }} /></label>
-            <label>Y {t('right')}: <input maxLength={1} value={aName} onChange={function(e) { setAName(letterOnly(e.target.value)); }} /></label>
+            <label>X {t('right')}: <input maxLength={1} value={aName} onChange={function(e) { setAName(letterOnly(e.target.value)); }} /></label>
+            <label>Y {t('right')}: <input maxLength={1} value={zName} onChange={function(e) { setZName(letterOnly(e.target.value)); }} /></label>
             <label>{t('axisLengthX')} (mm): <input type="number" value={axisXmm} onChange={function(e) { setAxisXmm(Number(e.target.value)); }} /></label>
             <label>{t('axisLengthY')} (mm): <input type="number" value={axisYmm} onChange={function(e) { setAxisYmm(Number(e.target.value)); }} /></label>
             <label>{t('hotwireLength')} (mm): <input type="number" value={hotwireLength} onChange={function(e) { setHotwireLength(Number(e.target.value)); }} /></label>
@@ -304,6 +304,8 @@ window.LeftPanel = function LeftPanel(props) {
             <label>{t('width_foam')} (mm): <input type="number" value={foamWidth} onChange={function(e) { setFoamWidth(Number(e.target.value)); }} /></label>
             <label>{t('height_foam')} (mm): <input type="number" value={foamHeight} onChange={function(e) { setFoamHeight(Number(e.target.value)); }} /></label>
             <label>{t('offset_foam')} (mm): <input type="number" value={foamOffset} onChange={function(e) { setFoamOffset(Number(e.target.value)); }} /></label>
+            <input type="range" min={(hotwireLength-foamWidth)/-2} max={(hotwireLength-foamWidth)/2} step="1" value={foamOffset} onChange={function(e) { setFoamOffset(Number(e.target.value)); }} />
+            <span >[Min: {(hotwireLength - foamWidth) / -2} | Max: {(hotwireLength - foamWidth) / 2}]</span>
           </div>
         )}
       </div>

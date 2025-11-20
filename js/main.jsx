@@ -57,7 +57,7 @@ function HotwireWing3D() {
   const [fMin, setFMin] = useState(1);
   const [hotwireLength, setHotwireLength] = useState(800);
   const [speed, setSpeed] = useState(200);
-  const machineLimits = { X: axisXmm, Y: axisYmm, Z: axisXmm, A: axisYmm, Fmax: fMax, Fmin: fMin};
+  const machineLimits = { X: axisXmm, Y: axisYmm, Z: axisYmm, A: axisXmm, Fmax: fMax, Fmin: fMin};
   const [hotWirePower, setHotWirePower] = useState(1);
   const [wireDiameter, setWireDiameter] = useState(0.4); // z. B. 0.6 mm // Drahtdurchmesser in mm
   const [kerfSide, setKerfSide] = useState('none'); // Kerf-Seite: 'inner', 'outer' oder 'none'
@@ -440,7 +440,7 @@ lines.forEach(line => {
       outerFinal = window.addSafeTravelPoints(outerFinal, { front: mirrorGap*2, back: mirrorGap, y: mirrorGap });
     }
  
-    let [innerProjected, outerProjected] = window.projectProfiles(innerFinal, outerFinal, span, foamWidth, foamOffset);
+    let [innerProjected, outerProjected] = window.projectProfiles(innerFinal, outerFinal, span, foamWidth);
 
     let [innerProjectedMaschine, outerProjectedMaschine] = window.projectProfiles(innerProjected, outerProjected, foamWidth, hotwireLength, foamOffset);
     
@@ -567,7 +567,6 @@ lines.forEach(line => {
       };
   }
 
-
     setGcode(generatedGcode);
 
   }, [
@@ -625,13 +624,6 @@ useEffect(() => {
   }
 }, [speedMultiplier]); // Nur dieser Effekt reagiert auf Slider!
 
-// Simulation 3. TAIL-LENGTH-EFFEKT
-/*useEffect(() => {
-  if (window.hotwireSim && window.hotwireSim.running) {
-    window.hotwireSim.trailLength = tailLengthSimu;
-  }
-}, [tailLengthSimu]);*/
-
 //Surface Aktivieren/Deaktivieren
 useEffect(() => {
   const scene = sceneRef.current;
@@ -672,9 +664,12 @@ useEffect(() => {
     return;
   }
 
+  // FoamOffset nur auf Z-Achse anwenden
+  const innerOffset = inner.map(p => ({ ...p, z: p.z + foamOffset }));
+  const outerOffset = outer.map(p => ({ ...p, z: p.z + foamOffset }));
   //console.log('[Surface] Creating new surface with', inner.length, 'inner points and', outer.length, 'outer points');
-
-  const surfaceMesh = window.createProjectedSurface(scene, inner, outer, 0xff8800, 0.5);
+  const surfaceMesh = window.createProjectedSurface(scene, innerOffset, outerOffset, 0xff8800, 0.5);
+  //const surfaceMesh = window.createProjectedSurface(scene, inner, outer, 0xff8800, 0.5);
 
   if (surfaceMesh) {
     scene.projectedSurface = surfaceMesh;
@@ -707,7 +702,7 @@ useEffect(() => {
       scene.projectedSurface = null;
     }
   };
-}, [surfaceVisible, finalProfiles]); 
+}, [surfaceVisible, finalProfiles, foamOffset]); 
 
 // Foam Block
 useEffect(() => {
