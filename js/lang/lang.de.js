@@ -27,6 +27,7 @@ window.langDE = {
   length: "Länge",
   thickness: "Dicke",
   rotation: "Rotation",
+  rotation_outer: "Rotation",
   vertical: "Vertikal",
   chord: "Chord",
 
@@ -46,9 +47,11 @@ window.langDE = {
 
   // --- Foam Block ---
   foamBlock: "Foam Block",
-  width: "Breite",
-  height: "Höhe",
+  width_foam: "Breite",
+  height_foam: "Y/A Height",
+  length_foam: "X/Z Länge",
   showFoam: "Schaum anzeigen",
+  offset_foam: "Offset",
 
   // --- GCode & Simulation & Sonstiges ---
   gcode: "Generierter GCode",

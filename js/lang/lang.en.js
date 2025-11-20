@@ -17,12 +17,12 @@ window.langEN = {
   machineEntryExit: "Machine entry/exit",
 
   innerProfile: "Root Airfoil",
-  outerProfile: "Tip Airfoil",
+  outerProfile: "Tip Profile",
   color: "Color",
   length: "Chord",
   thickness: "Scale",
-  rotationIn: "Root Angle",
-  rotationOut: "Washout(-)",
+  rotation: "Twist",
+  rotation_outer: "Washout (negative)",
   vertical: "Dihedral",
   chord: "LE Sweep",
 
@@ -41,9 +41,10 @@ window.langEN = {
 
   foamBlock: "Foam block",
   showFoam: "Show foam",
-  width: "Width",
-  height: "Y/A Height",
-  lengthFoam: "X/Z Depth",
+  width_foam: "Width",
+  height_foam: "Y/A Height",
+  length_foam: "X/Z Depth",
+  offset_foam: "offset",
 
   gcode: "Generated GCode",
 
